@@ -1,0 +1,36 @@
+# Dependências
+/node_modules
+
+# Build artifacts
+/dist
+/build
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de cache e temporários
+.DS_Store # macOS
+*.tsbuildinfo # TypeScript build info
+.eslintcache # ESLint cache
+.vite/ # Vite cache directory
+
+# Relatórios de cobertura de testes
+/coverage
+.nyc_output/
+
+# IDE e editor
+.vscode/ # Configurações específicas do VS Code (opcional, alguns preferem versionar settings.json)
+.idea/ # JetBrains IDEs
+
+# Outros
+# .env.example # Este arquivo deve ser versionado como um modelo, se existir

@@ -1,0 +1,43 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Login } from '../pages/Login';
+import { Dashboard } from '../pages/Dashboard';
+import { AppLayout } from '../pages/apps/AppLayout';
+import { Printers } from '../pages/apps/Printers';
+import { LancamentoCep } from '../pages/apps/LancamentoCep';
+import { GeradorEtiquetas } from '../pages/apps/GeradorEtiquetas';
+import { SobreApp } from '../pages/apps/SobreApp';
+import { AdminLayout } from '../pages/admin/AdminLayout';
+import { AdminHome } from '../pages/admin/AdminHome';
+import { Users } from '../pages/admin/Users';
+import { Applications } from '../pages/admin/Applications';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* Rotas dos Mini Apps encapsuladas no Layout Base */}
+        <Route path="/apps" element={<AppLayout />}>
+          <Route path="printers" element={<Printers />} />
+          <Route path="cep" element={<LancamentoCep />} />
+          <Route path="etiquetas" element={<GeradorEtiquetas />} />
+          <Route path="sobre" element={<SobreApp />} />
+        </Route>
+
+        {/* Rotas do Painel Admin */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminHome />} />
+          <Route path="usuarios" element={<Users />} />
+          <Route path="aplicacoes" element={<Applications />} />
+        </Route>
+
+        {/* Redirecionamento padrão para login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
