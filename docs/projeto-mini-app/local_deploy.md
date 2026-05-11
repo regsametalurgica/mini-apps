@@ -39,30 +39,43 @@ cp .env.example .env
 *(Ajuste os valores dentro do `.env` conforme os URLs locais do seu backend, se necessário)*.
 
 ### 4. Iniciar o Servidor de Desenvolvimento
-Com as dependências instaladas, você já pode iniciar o servidor local do Vite, que possui _Hot Module Replacement_ (HMR) - as mudanças no código refletem instantaneamente no navegador.
 
-Execute:
-```bash
-npm run dev
-```
+Para trabalhar no desenvolvimento da aplicação (Frontend + Backend local):
 
-### 5. Acessar a Aplicação
-O terminal exibirá uma mensagem indicando que o servidor está rodando, geralmente na porta `5173`.
+1. **Frontend (React/Vite):** Abra um terminal e execute:
+   ```bash
+   npm run dev:frontend
+   ```
+   *(Isto iniciará o Vite na porta 5173 com Hot Module Replacement).*
 
-- Abra o seu navegador web (Chrome, Firefox, Edge, etc).
-- Acesse a URL: **http://localhost:5173** (ou a URL informada no terminal).
+2. **Backend (Node.js/Express):** Abra outro terminal e execute:
+   ```bash
+   npm run dev:backend
+   ```
+   *(Isto iniciará a API, geralmente na porta 3000).*
+
+### 5. Acessar a Aplicação (Modo Dev)
+
+- Abra o seu navegador e acesse a URL: **http://localhost:5173** para visualizar o frontend.
+- O frontend se comunicará com o backend localmente na porta 3000 (conforme configurado no seu `.env`).
 
 ---
 
-## Comandos Adicionais Úteis
+## Deploy em Produção (Ambiente Local da Rede)
 
-- **Build para Produção**: Quando quiser gerar os arquivos finais otimizados para deploy em um servidor real.
-  ```bash
-  npm run build
-  ```
-  *(Os arquivos gerados ficarão na pasta `dist`)*
+Para colocar a aplicação no ar para os usuários da rede interna da empresa, você utilizará o servidor Node.js unificado.
 
-- **Visualizar o Build Localmente**: Para testar a versão de produção gerada no passo anterior.
-  ```bash
-  npm run preview
-  ```
+1. **Gere o Build de Produção:**
+   Isso compilará o frontend para a pasta `dist`.
+   ```bash
+   npm run build
+   ```
+
+2. **Inicie o Servidor Único:**
+   O script abaixo inicializa o backend, que também servirá os arquivos estáticos recém-criados.
+   ```bash
+   npm start
+   ```
+
+3. **Acesso Final:**
+   A aplicação completa (API + Interface) estará disponível na porta configurada (ex: **http://localhost:3000**). Este é o IP e a porta que você deve compartilhar com os usuários na rede.

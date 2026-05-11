@@ -2,76 +2,141 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { getUsers, saveUsers } from '../../data/mockData';
+import { useAuthStore } from '../../stores/authStore';
 
 export const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
-  // Carregar usuários do localStorage na montagem
+  const token = useAuthStore((state) => state.token);
+
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) throw new Error('Erro ao buscar usuários');
+      const data = await response.json();
+      setUsers(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    setUsers(getUsers());
+    fetchUsers();
   }, []);
 
   // States do CRUD
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
-  const [userToDelete, setUserToDelete] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState({ name: '', email: '', status: 'Ativo', isAdmin: false });
+  const [formData, setFormData] = useState({ 
+    nome: '', 
+    email: '', 
+    password: '', 
+    role: 'user', 
+    ativo: true 
+  });
 
   // Filtro
   const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (user.nome?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (user.email?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Ações
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', status: 'Ativo', isAdmin: false });
+    setFormData({ nome: '', email: '', password: '', role: 'user', ativo: true });
     setIsFormModalOpen(true);
   };
 
   const openEditModal = (user: any) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, status: user.status, isAdmin: !!user.isAdmin });
+    setFormData({ 
+      nome: user.nome, 
+      email: user.email, 
+      password: '', // Senha em branco por padrão na edição
+      role: user.role, 
+      ativo: user.ativo 
+    });
     setIsFormModalOpen(true);
   };
 
-  const openDeleteModal = (id: number) => {
+  const openDeleteModal = (id: string) => {
     setUserToDelete(id);
     setIsDeleteModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    let updatedUsers;
-    if (editingUser) {
-      updatedUsers = users.map(u => u.id === editingUser.id ? { ...u, ...formData } : u);
-    } else {
-      const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
-      updatedUsers = [...users, { id: newId, ...formData }];
+    try {
+      const isEditing = !!editingUser;
+      const url = isEditing 
+        ? `http://localhost:3000/api/admin/users/${editingUser.id}`
+        : 'http://localhost:3000/api/admin/users';
+      
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erro ao salvar usuário');
+      }
+
+      await fetchUsers();
+      setIsFormModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
     }
-    setUsers(updatedUsers);
-    saveUsers(updatedUsers);
-    setIsFormModalOpen(false);
   };
 
-  const handleDelete = () => {
-    if (userToDelete) {
-      const updatedUsers = users.filter(u => u.id !== userToDelete);
-      setUsers(updatedUsers);
-      saveUsers(updatedUsers);
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+    try {
+      const response = await fetch(`http://localhost:3000/api/admin/users/${userToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Erro ao excluir usuário');
+      }
+
+      await fetchUsers();
+      setIsDeleteModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
     }
-    setIsDeleteModalOpen(false);
   };
+
+  const isAdminDefault = editingUser?.email === 'admin';
 
   return (
     <div className="flex flex-col gap-8 h-full">
-      {/* Top Actions */}
+      {/* Top Actions ... (mantido igual) */}
       <div className="flex justify-end items-end">
         <div className="flex items-center gap-4">
           <div className="relative">
@@ -100,7 +165,9 @@ export const Users = () => {
         </div>
 
         <div className="flex-1 overflow-auto">
-          {filteredUsers.length === 0 ? (
+          {isLoading ? (
+            <div className="p-8 text-center text-content-tertiary text-[14px]">Carregando...</div>
+          ) : filteredUsers.length === 0 ? (
             <div className="p-8 text-center text-content-tertiary text-[14px]">
               Nenhum usuário encontrado.
             </div>
@@ -108,8 +175,8 @@ export const Users = () => {
             filteredUsers.map(user => (
               <div key={user.id} className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main items-center hover:bg-[#1A1A1A] transition-colors">
                 <div className="col-span-4 text-[14px] text-content-main font-medium truncate flex items-center gap-2">
-                  {user.name}
-                  {user.isAdmin && (
+                  {user.nome}
+                  {user.role === 'admin' && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/20">
                       Admin
                     </span>
@@ -120,11 +187,11 @@ export const Users = () => {
                 </div>
                 <div className="col-span-2">
                   <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium ${
-                    user.status === 'Ativo' 
+                    user.ativo 
                       ? 'bg-primary/10 text-primary' 
                       : 'bg-status-error/10 text-status-error'
                   }`}>
-                    {user.status}
+                    {user.ativo ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
                 <div className="col-span-2 flex justify-end gap-2">
@@ -137,6 +204,7 @@ export const Users = () => {
                   <button 
                     onClick={() => openDeleteModal(user.id)}
                     className="w-8 h-8 rounded-md bg-background-card border border-border-main flex items-center justify-center text-status-error hover:bg-status-error/10 hover:border-status-error/30 transition-all"
+                    disabled={user.email === 'admin'}
                   >
                     <i className="bi bi-trash"></i>
                   </button>
@@ -155,10 +223,11 @@ export const Users = () => {
         <form onSubmit={handleSave} className="flex flex-col gap-4">
           <Input 
             label="Nome Completo"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            value={formData.nome}
+            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
             placeholder="Ex: João da Silva"
             required
+            disabled={isAdminDefault}
           />
           <Input 
             label="E-mail"
@@ -167,31 +236,43 @@ export const Users = () => {
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             placeholder="joao@regsa.local"
             required
+            disabled={isAdminDefault}
           />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[12px] font-medium text-content-secondary">Status</label>
-            <select 
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full h-10 px-4 bg-background-main border border-border-main rounded-lg text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none"
-            >
-              <option value="Ativo">Ativo</option>
-              <option value="Inativo">Inativo</option>
-            </select>
-          </div>
+          <Input 
+            label={editingUser ? "Nova Senha (deixe em branco para manter)" : "Senha Inicial"}
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            placeholder="********"
+            required={!editingUser}
+          />
+          {!isAdminDefault && (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-medium text-content-secondary">Cargo / Nível</label>
+                <select 
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  className="w-full h-10 px-4 bg-background-main border border-border-main rounded-lg text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none"
+                >
+                  <option value="user">Usuário Comum</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12px] font-medium text-content-secondary">Status</label>
+                <select 
+                  value={formData.ativo ? 'true' : 'false'}
+                  onChange={(e) => setFormData({ ...formData, ativo: e.target.value === 'true' })}
+                  className="w-full h-10 px-4 bg-background-main border border-border-main rounded-lg text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none"
+                >
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
+            </>
+          )}
           
-          <label className="flex items-center gap-3 mt-2 p-3 bg-background-main border border-border-main rounded-lg cursor-pointer hover:border-border-subtle transition-colors">
-            <input 
-              type="checkbox" 
-              checked={formData.isAdmin}
-              onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
-              className="w-4 h-4 rounded bg-background-secondary border-border-main text-primary focus:ring-primary focus:ring-offset-background-main"
-            />
-            <div className="flex flex-col">
-              <span className="text-[13px] text-content-main font-medium">Tornar esse usuário administrador</span>
-              <span className="text-[11px] text-content-secondary">Administradores têm acesso a todos os aplicativos automaticamente.</span>
-            </div>
-          </label>
           <div className="flex gap-3 mt-4">
             <Button 
               type="button" 
@@ -235,7 +316,8 @@ export const Users = () => {
           </div>
         </div>
       </Modal>
-
     </div>
   );
 };
+
+

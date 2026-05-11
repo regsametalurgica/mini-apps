@@ -1,46 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../../components/ui/Button';
-
-// Mock de Usuários
-const mockUsers = [
-  { id: 1, name: 'André Lima' },
-  { id: 2, name: 'Mariana Souza' },
-  { id: 3, name: 'Carlos Santos' },
-  { id: 4, name: 'Fernanda Rocha' },
-];
-
-// Mock de Apps
-const mockApps = [
-  { id: 'cep', name: 'Lançamento - CEP' },
-  { id: 'printers', name: 'Printers' },
-  { id: 'ia', name: 'Resumo por IA' },
-  { id: 'etiquetas', name: 'Gerador de Etiquetas' },
-  { id: 'sobre', name: 'Sobre o App' },
-];
+import { useAuthStore } from '../../stores/authStore';
 
 export const Applications = () => {
-  const [selectedUser, setSelectedUser] = useState<number | null>(null);
+  const [users, setUsers] = useState<any[]>([]);
+  const [apps, setApps] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
   const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const token = useAuthStore((state) => state.token);
 
-  // Simula buscar permissões de um usuário ao selecioná-lo
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const userId = Number(e.target.value);
-    setSelectedUser(userId || null);
+  // Carregar usuários e apps iniciais
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        const [usersRes, appsRes] = await Promise.all([
+          fetch('http://localhost:3000/api/admin/users', { headers }),
+          fetch('http://localhost:3000/api/admin/apps', { headers })
+        ]);
+
+        if (usersRes.ok) setUsers(await usersRes.json());
+        if (appsRes.ok) setApps(await appsRes.json());
+      } catch (err) {
+        console.error('Erro ao carregar dados:', err);
+      }
+    };
+    fetchData();
+  }, [token]);
+
+  // Buscar permissões ao selecionar um usuário
+  const handleUserChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const userId = e.target.value;
+    setSelectedUser(userId);
     setShowSuccess(false);
+    setPermissions({});
 
     if (userId) {
-      // Mock de permissões (exemplo: usuário 1 tem tudo menos IA, os outros têm apenas alguns)
-      const mockPerms: Record<string, boolean> = {
-        cep: true,
-        printers: userId === 1 || userId === 2,
-        ia: false, // Bloqueado para simular o teste do Dashboard
-        etiquetas: true,
-        sobre: true
-      };
-      setPermissions(mockPerms);
-    } else {
-      setPermissions({});
+      setIsLoading(true);
+      try {
+        const response = await fetch(`http://localhost:3000/api/admin/user-permissions/${userId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const userAppIds: string[] = await response.json();
+          const permsObj: Record<string, boolean> = {};
+          userAppIds.forEach(id => permsObj[id] = true);
+          setPermissions(permsObj);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar permissões:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -52,10 +67,30 @@ export const Applications = () => {
     setShowSuccess(false);
   };
 
-  const handleSave = () => {
-    // Simula salvar no backend
-    setShowSuccess(true);
-    setTimeout(() => setShowSuccess(false), 3000);
+  const handleSave = async () => {
+    if (!selectedUser) return;
+
+    const appIds = Object.keys(permissions).filter(id => permissions[id]);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/admin/user-permissions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: selectedUser, appIds }),
+      });
+
+      if (response.ok) {
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        alert('Erro ao salvar permissões');
+      }
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
+    }
   };
 
   return (
@@ -73,13 +108,13 @@ export const Applications = () => {
         <div className="flex flex-col gap-2">
           <label className="text-[13px] font-medium text-white">Selecione o Usuário</label>
           <select 
-            value={selectedUser || ''}
+            value={selectedUser}
             onChange={handleUserChange}
             className="w-full h-[42px] px-4 bg-background-main border border-border-main rounded-lg text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none"
           >
             <option value="">-- Escolha um usuário --</option>
-            {mockUsers.map(u => (
-              <option key={u.id} value={u.id}>{u.name}</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.nome} ({u.email})</option>
             ))}
           </select>
         </div>
@@ -91,27 +126,35 @@ export const Applications = () => {
             {/* Lista de Apps (Checkboxes) */}
             <div className="flex flex-col gap-4">
               <h3 className="text-[14px] font-medium text-white">Permissões de Acesso</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {mockApps.map(app => (
-                  <label 
-                    key={app.id} 
-                    className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                      permissions[app.id] 
-                        ? 'border-primary bg-primary/5' 
-                        : 'border-border-main bg-background-main hover:border-border-subtle'
-                    }`}
-                  >
-                    <div className={`w-5 h-5 rounded-[4px] border flex items-center justify-center transition-colors ${
-                      permissions[app.id] ? 'bg-primary border-primary' : 'border-content-tertiary'
-                    }`}>
-                      {permissions[app.id] && <i className="bi bi-check text-white text-[16px]"></i>}
-                    </div>
-                    <span className={`text-[13px] font-medium ${permissions[app.id] ? 'text-white' : 'text-content-secondary'}`}>
-                      {app.name}
-                    </span>
-                  </label>
-                ))}
-              </div>
+              {isLoading ? (
+                <p className="text-content-tertiary text-[13px]">Carregando permissões...</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {apps.map(app => (
+                    <label 
+                      key={app.id} 
+                      onClick={() => handleToggleApp(app.id)}
+                      className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                        permissions[app.id] 
+                          ? 'border-primary bg-primary/5' 
+                          : 'border-border-main bg-background-main hover:border-border-subtle'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-[4px] border flex items-center justify-center transition-colors ${
+                        permissions[app.id] ? 'bg-primary border-primary' : 'border-content-tertiary'
+                      }`}>
+                        {permissions[app.id] && <i className="bi bi-check text-white text-[16px]"></i>}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-[13px] font-medium ${permissions[app.id] ? 'text-white' : 'text-content-secondary'}`}>
+                          {app.nome}
+                        </span>
+                        <span className="text-[11px] text-content-tertiary">{app.rota}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between mt-4">
@@ -124,7 +167,7 @@ export const Applications = () => {
                 <span></span>
               )}
               
-              <Button onClick={handleSave} className="px-8">
+              <Button onClick={handleSave} className="px-8" disabled={isLoading}>
                 Salvar Permissões
               </Button>
             </div>
@@ -140,3 +183,4 @@ export const Applications = () => {
     </div>
   );
 };
+

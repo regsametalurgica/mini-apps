@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { setLoggedUser } from '../../data/mockData';
+import { useAuthStore } from '../../stores/authStore';
 
 export const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const logout = useAuthStore((state) => state.logout);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
-    setLoggedUser(null);
+    logout();
     navigate('/login');
   };
+
 
   const navItems = [
     { path: '/admin', icon: 'bi-house-door', label: 'Início', exact: true },

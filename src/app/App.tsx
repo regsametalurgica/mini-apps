@@ -10,27 +10,34 @@ import { AdminLayout } from '../pages/admin/AdminLayout';
 import { AdminHome } from '../pages/admin/AdminHome';
 import { Users } from '../pages/admin/Users';
 import { Applications } from '../pages/admin/Applications';
+import { ProtectedRoute } from '../components/ProtectedRoute';
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Rotas dos Mini Apps encapsuladas no Layout Base */}
-        <Route path="/apps" element={<AppLayout />}>
-          <Route path="printers" element={<Printers />} />
-          <Route path="cep" element={<LancamentoCep />} />
-          <Route path="etiquetas" element={<GeradorEtiquetas />} />
-          <Route path="sobre" element={<SobreApp />} />
+        {/* Rotas Protegidas (Requerem Login) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          
+          {/* Rotas dos Mini Apps encapsuladas no Layout Base */}
+          <Route path="/apps" element={<AppLayout />}>
+            <Route path="printers" element={<Printers />} />
+            <Route path="cep" element={<LancamentoCep />} />
+            <Route path="etiquetas" element={<GeradorEtiquetas />} />
+            <Route path="sobre" element={<SobreApp />} />
+          </Route>
         </Route>
 
-        {/* Rotas do Painel Admin */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminHome />} />
-          <Route path="usuarios" element={<Users />} />
-          <Route path="aplicacoes" element={<Applications />} />
+        {/* Rotas do Painel Admin (Apenas Administradores) */}
+        <Route element={<ProtectedRoute adminOnly />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminHome />} />
+            <Route path="usuarios" element={<Users />} />
+            <Route path="aplicacoes" element={<Applications />} />
+          </Route>
         </Route>
 
         {/* Redirecionamento padrão para login */}
@@ -39,5 +46,6 @@ function App() {
     </Router>
   );
 }
+
 
 export default App;

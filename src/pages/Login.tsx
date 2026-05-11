@@ -1,37 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { getUsers, setLoggedUser } from '../data/mockData';
+import { useAuthStore } from '../stores/authStore';
 
 export const Login = () => {
   const navigate = useNavigate();
+  const { token, user, setAuth } = useAuthStore();
+  
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Se já estiver logado, redireciona para fora do login
+  useEffect(() => {
+    if (token && user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  }, [token, user, navigate]);
+
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Buscar o usuário pelo email (simulando backend)
-    const users = getUsers();
-    const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    setError('');
+    setIsLoading(true);
 
-    if (user) {
-      setLoggedUser(user);
-      if (user.isAdmin) {
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao realizar login');
+      }
+
+      // Salvar no Zustand e LocalStorage
+      setAuth(data.token, data.user);
+
+      // Redirecionamento baseado no Role
+      if (data.user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/dashboard');
       }
-    } else {
-      // Se não encontrar, apenas loga com um usuário fake para não travar a UI de demonstração
-      // Mas o ideal seria mostrar erro. Vamos logar como admin fake se for 'admin' ou apenas direcionar pro dashboard
-      if (email.includes('admin')) {
-        setLoggedUser({ name: 'Admin Temp', email, isAdmin: true, status: 'Ativo' });
-        navigate('/admin');
-      } else {
-        setLoggedUser({ name: 'User Temp', email, isAdmin: false, status: 'Ativo' });
-        navigate('/dashboard');
-      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -46,25 +72,35 @@ export const Login = () => {
         <div className="w-full max-w-[320px]">
           <form onSubmit={handleLogin} className="flex flex-col gap-6">
             <div className="flex flex-col gap-4">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[12px] p-3 rounded-md mb-2">
+                  {error}
+                </div>
+              )}
+              
               <Input 
                 label="Usuário" 
                 type="text" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="usuario@regsa.local"
+                placeholder="admin ou usuario"
                 icon="bi-person"
+                required
               />
               <Input 
                 label="Senha" 
                 type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="**********"
                 icon="bi-key"
+                required
               />
             </div>
 
             <div className="flex flex-col gap-4 mt-2">
-              <Button type="submit" className="w-full">
-                Acessar
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Acessando...' : 'Acessar'}
               </Button>
               
               <a 
@@ -90,3 +126,4 @@ export const Login = () => {
     </div>
   );
 };
+

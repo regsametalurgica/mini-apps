@@ -1,39 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../components/ui/Modal';
-import { getLoggedUser, setLoggedUser } from '../data/mockData';
+import { useAuthStore } from '../stores/authStore';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [apps, setApps] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const currentUser = getLoggedUser() || { name: 'Usuário Convidado' };
+  const { user, token, logout } = useAuthStore();
 
-  const miniApps = [
-    { id: 1, name: 'Lançamento - CEP', icon: 'bi-bar-chart-line', path: '/apps/cep', requiresPermission: false },
-    { id: 2, name: 'Printers', icon: 'bi-printer', path: '/apps/printers', requiresPermission: false },
-    { id: 3, name: 'Resumo por IA', icon: 'bi-robot', path: '', requiresPermission: true },
-    { id: 4, name: 'Gerador de Etiquetas', icon: 'bi-palette', path: '/apps/etiquetas', requiresPermission: false },
-    { id: 5, name: 'Sobre o App', icon: 'bi-info-circle', path: '/apps/sobre', requiresPermission: false },
-  ];
+  useEffect(() => {
+    const fetchUserApps = async () => {
+      if (!user || !token) return;
+      
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        
+        // Se for admin, busca todos. Se não, o ideal seria um endpoint /api/my-apps
+        // Para simplificar agora, buscaremos de acordo com o papel.
+        let url = 'http://localhost:3000/api/admin/apps'; // Admin vê todos
+        
+        if (user.role !== 'admin') {
+          // Usuário comum: Buscaríamos apenas os dele. 
+          // Vamos criar um endpoint rápido no backend ou filtrar aqui (filtrar é menos seguro, mas rápido para o MVP)
+          // Mas vamos fazer o certo: buscar apenas as permissões dele.
+          const permsRes = await fetch(`http://localhost:3000/api/admin/user-permissions/${user.id}`, { headers });
+          const userAppIds: string[] = await permsRes.json();
+          
+          const allAppsRes = await fetch('http://localhost:3000/api/admin/apps', { headers });
+          const allApps: any[] = await allAppsRes.json();
+          
+          setApps(allApps.filter(a => userAppIds.includes(a.id)));
+        } else {
+          const response = await fetch(url, { headers });
+          if (response.ok) setApps(await response.json());
+        }
+      } catch (err) {
+        console.error('Erro ao carregar apps:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const filteredApps = miniApps.filter(app => 
-    app.name.toLowerCase().includes(searchQuery.toLowerCase())
+    fetchUserApps();
+  }, [user, token]);
+
+  const filteredApps = apps.filter(app => 
+    app.nome.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleAppClick = (app: typeof miniApps[0]) => {
-    if (app.requiresPermission && !currentUser?.isAdmin) {
-      setIsModalOpen(true);
-    } else {
-      navigate(app.path || '#');
-    }
-  };
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
-    setLoggedUser(null);
+    logout();
     navigate('/login');
   };
 
@@ -47,7 +69,7 @@ export const Dashboard = () => {
             <span className="text-primary">Apps</span>
           </div>
           <p className="text-[12px] text-content-secondary">
-            Usuário Logado: {currentUser.name} {currentUser.isAdmin && '(Admin)'}
+            Usuário Logado: {user?.nome} {user?.role === 'admin' && '(Admin)'}
           </p>
         </div>
 
@@ -79,6 +101,15 @@ export const Dashboard = () => {
                   onClick={() => setIsProfileMenuOpen(false)}
                 />
                 <div className="absolute top-12 right-0 w-48 bg-background-secondary border border-border-main rounded-lg shadow-xl z-50 overflow-hidden flex flex-col py-1">
+                  {user?.role === 'admin' && (
+                    <button 
+                      onClick={() => navigate('/admin')}
+                      className="w-full text-left px-4 py-2.5 text-[13px] text-white hover:bg-[#1F1F1F] transition-colors flex items-center gap-2"
+                    >
+                      <i className="bi bi-speedometer2"></i>
+                      Painel Admin
+                    </button>
+                  )}
                   <button 
                     onClick={() => setIsProfileMenuOpen(false)}
                     className="w-full text-left px-4 py-2.5 text-[13px] text-content-main hover:bg-[#1F1F1F] transition-colors flex items-center gap-2"
@@ -103,27 +134,32 @@ export const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-8">
-        <div className="grid grid-cols-5 gap-12 w-fit">
-          {filteredApps.map(app => (
-            <div 
-              key={app.id} 
-              onClick={() => handleAppClick(app)}
-              className="flex flex-col items-center gap-3 cursor-pointer group"
-            >
-              <div className="w-[96px] h-[96px] rounded-lg bg-background-card border border-border-subtle flex items-center justify-center transition-all duration-200 ease-in-out group-hover:bg-[#1F1F1F] group-hover:-translate-y-[2px]">
-                <i className={`bi ${app.icon} text-[28px] text-[rgba(255,255,255,0.65)]`}></i>
+        {isLoading ? (
+          <p className="text-content-tertiary">Carregando seus aplicativos...</p>
+        ) : (
+          <div className="grid grid-cols-5 gap-12 w-fit">
+            {filteredApps.map(app => (
+              <div 
+                key={app.id} 
+                onClick={() => navigate(app.rota)}
+                className="flex flex-col items-center gap-3 cursor-pointer group"
+              >
+                <div className="w-[96px] h-[96px] rounded-lg bg-background-card border border-border-subtle flex items-center justify-center transition-all duration-200 ease-in-out group-hover:bg-[#1F1F1F] group-hover:-translate-y-[2px]">
+                  <i className={`bi ${app.icone || 'bi-app'} text-[28px] text-[rgba(255,255,255,0.65)]`}></i>
+                </div>
+                <span className="text-[11px] text-content-secondary font-medium text-center">
+                  {app.nome}
+                </span>
               </div>
-              <span className="text-[11px] text-content-secondary font-medium text-center">
-                {app.name}
-              </span>
-            </div>
-          ))}
-          {filteredApps.length === 0 && (
-            <div className="col-span-5 flex justify-center py-10">
-              <span className="text-content-tertiary text-[13px]">Nenhum app encontrado para "{searchQuery}"</span>
-            </div>
-          )}
-        </div>
+            ))}
+            {filteredApps.length === 0 && (
+              <div className="col-span-5 flex flex-col items-center justify-center py-10 gap-2">
+                <span className="text-content-tertiary text-[14px]">Nenhum app disponível.</span>
+                <p className="text-content-tertiary text-[11px]">Entre em contato com o admin para liberar acessos.</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Modal de Sem Permissão */}
@@ -141,3 +177,4 @@ export const Dashboard = () => {
     </div>
   );
 };
+
