@@ -8,7 +8,7 @@ export const Login = () => {
   const navigate = useNavigate();
   const { token, user, setAuth } = useAuthStore();
   
-  const [email, setEmail] = useState('');
+  const [usuario, setUsuario] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +31,12 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
+      const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ usuario, password }),
       });
 
       const data = await response.json();
@@ -81,8 +81,8 @@ export const Login = () => {
               <Input 
                 label="Usuário" 
                 type="text" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={usuario}
+                onChange={(e) => setUsuario(e.target.value)}
                 placeholder="admin ou usuario"
                 icon="bi-person"
                 required

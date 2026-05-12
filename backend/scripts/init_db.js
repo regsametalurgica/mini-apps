@@ -28,7 +28,8 @@ async function initDB() {
       CREATE TABLE IF NOT EXISTS usuarios (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         nome VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE NOT NULL,
+        usuario VARCHAR(255) UNIQUE NOT NULL,
+        matricula INTEGER,
         senha_hash VARCHAR(255) NOT NULL,
         role VARCHAR(50) DEFAULT 'user',
         ativo BOOLEAN DEFAULT true,

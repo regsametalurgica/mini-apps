@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 // Listar todos os usuários (Apenas Admin)
 export const getUsers = async (req, res) => {
   try {
-    const { rows } = await pool.query('SELECT id, nome, email, role, ativo, criado_em FROM usuarios ORDER BY criado_em DESC');
+    const { rows } = await pool.query('SELECT id, nome, usuario, matricula, role, ativo, criado_em FROM usuarios ORDER BY criado_em DESC');
     res.json(rows);
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
@@ -15,24 +15,24 @@ export const getUsers = async (req, res) => {
 // Criar novo usuário (Apenas Admin)
 export const createUser = async (req, res) => {
   try {
-    const { nome, email, password, role } = req.body;
+    const { nome, usuario, matricula, password, role } = req.body;
 
-    if (!nome || !email || !password) {
-      return res.status(400).json({ message: 'Nome, e-mail e senha são obrigatórios.' });
+    if (!nome || !usuario || !password) {
+      return res.status(400).json({ message: 'Nome, usuário e senha são obrigatórios.' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const { rows: existingUser } = await pool.query('SELECT id FROM usuarios WHERE email = $1', [normalizedEmail]);
+    const normalizedUser = usuario.toLowerCase().trim();
+    const { rows: existingUser } = await pool.query('SELECT id FROM usuarios WHERE usuario = $1', [normalizedUser]);
     if (existingUser.length > 0) {
-      return res.status(400).json({ message: 'Já existe um usuário com este e-mail.' });
+      return res.status(400).json({ message: 'Já existe um usuário com este nome de usuário.' });
     }
 
     const senhaHash = await bcrypt.hash(password, 10);
     const userRole = role === 'admin' ? 'admin' : 'user';
 
     const { rows: newUser } = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, nome, email, role, ativo, criado_em',
-      [nome, normalizedEmail, senhaHash, userRole]
+      'INSERT INTO usuarios (nome, usuario, matricula, senha_hash, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, usuario, matricula, role, ativo, criado_em',
+      [nome, normalizedUser, matricula || null, senhaHash, userRole]
     );
 
     res.status(201).json({ message: 'Usuário criado com sucesso', user: newUser[0] });
@@ -46,7 +46,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, email, password, role, ativo } = req.body;
+    const { nome, usuario, matricula, password, role, ativo } = req.body;
 
     const { rows: userRows } = await pool.query('SELECT * FROM usuarios WHERE id = $1', [id]);
     const user = userRows[0];
@@ -55,10 +55,10 @@ export const updateUser = async (req, res) => {
       return res.status(404).json({ message: 'Usuário não encontrado.' });
     }
 
-    const normalizedEmail = email ? email.toLowerCase().trim() : user.email;
+    const normalizedUser = usuario ? usuario.toLowerCase().trim() : user.usuario;
 
     // Regra: O usuário 'admin' padrão só pode ter a senha alterada
-    if (user.email === 'admin') {
+    if (user.usuario === 'admin') {
       if (password) {
         const senhaHash = await bcrypt.hash(password, 10);
         await pool.query('UPDATE usuarios SET senha_hash = $1 WHERE id = $2', [senhaHash, id]);
@@ -67,8 +67,8 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ message: 'Para o usuário admin, apenas a senha pode ser alterada.' });
     }
 
-    let query = 'UPDATE usuarios SET nome = $1, email = $2, role = $3, ativo = $4';
-    let params = [nome || user.nome, normalizedEmail, role || user.role, ativo !== undefined ? ativo : user.ativo];
+    let query = 'UPDATE usuarios SET nome = $1, usuario = $2, matricula = $3, role = $4, ativo = $5';
+    let params = [nome || user.nome, normalizedUser, matricula !== undefined ? matricula : user.matricula, role || user.role, ativo !== undefined ? ativo : user.ativo];
 
 
     if (password) {
@@ -93,8 +93,8 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { rows: userRows } = await pool.query('SELECT email FROM usuarios WHERE id = $1', [id]);
-    if (userRows.length > 0 && userRows[0].email === 'admin') {
+    const { rows: userRows } = await pool.query('SELECT usuario FROM usuarios WHERE id = $1', [id]);
+    if (userRows.length > 0 && userRows[0].usuario === 'admin') {
       return res.status(403).json({ message: 'O usuário administrador padrão não pode ser excluído.' });
     }
 

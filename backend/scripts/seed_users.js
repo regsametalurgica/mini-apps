@@ -29,19 +29,19 @@ async function seedUsers() {
 
     // Inserir Admin
     await pool.query(
-      `INSERT INTO usuarios (nome, email, senha_hash, role) 
-       VALUES ($1, $2, $3, $4) 
-       ON CONFLICT (email) DO NOTHING`,
-      ['Administrador', 'admin', adminPasswordHash, 'admin']
+      `INSERT INTO usuarios (nome, usuario, matricula, senha_hash, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (usuario) DO NOTHING`,
+      ['Administrador', 'admin', 1, adminPasswordHash, 'admin']
     );
     console.log('Usuário admin criado/verificado.');
 
     // Inserir Usuario comum
     await pool.query(
-      `INSERT INTO usuarios (nome, email, senha_hash, role) 
-       VALUES ($1, $2, $3, $4) 
-       ON CONFLICT (email) DO NOTHING`,
-      ['Usuário Teste', 'usuario', userPasswordHash, 'user']
+      `INSERT INTO usuarios (nome, usuario, matricula, senha_hash, role) 
+       VALUES ($1, $2, $3, $4, $5) 
+       ON CONFLICT (usuario) DO NOTHING`,
+      ['Usuário Teste', 'usuario', 999, userPasswordHash, 'user']
     );
     console.log('Usuário comum criado/verificado.');
 

@@ -23,5 +23,32 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.18);
   }
+
+  /* Remover setas de input number */
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+  input[type="date"],
+  input[type="time"] {
+    color-scheme: dark;
+  }
 }
 
+/* Reset global para evitar margens indesejadas */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-background-main text-content-main antialiased;
+}

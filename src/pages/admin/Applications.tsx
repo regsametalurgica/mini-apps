@@ -19,8 +19,8 @@ export const Applications = () => {
         const headers = { 'Authorization': `Bearer ${token}` };
         
         const [usersRes, appsRes] = await Promise.all([
-          fetch('http://localhost:3000/api/admin/users', { headers }),
-          fetch('http://localhost:3000/api/admin/apps', { headers })
+          fetch('/api/admin/users', { headers }),
+          fetch('/api/admin/apps', { headers })
         ]);
 
         if (usersRes.ok) setUsers(await usersRes.json());
@@ -42,7 +42,7 @@ export const Applications = () => {
     if (userId) {
       setIsLoading(true);
       try {
-        const response = await fetch(`http://localhost:3000/api/admin/user-permissions/${userId}`, {
+        const response = await fetch(`/api/admin/user-permissions/${userId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -73,7 +73,7 @@ export const Applications = () => {
     const appIds = Object.keys(permissions).filter(id => permissions[id]);
 
     try {
-      const response = await fetch('http://localhost:3000/api/admin/user-permissions', {
+      const response = await fetch('/api/admin/user-permissions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

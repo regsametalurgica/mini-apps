@@ -6,14 +6,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret_para_desenvolvimento';
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { usuario, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'E-mail e senha são obrigatórios.' });
+    if (!usuario || !password) {
+      return res.status(400).json({ message: 'Usuário e senha são obrigatórios.' });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE email = $1', [normalizedEmail]);
+    const normalizedUser = usuario.toLowerCase().trim();
+    const { rows } = await pool.query('SELECT * FROM usuarios WHERE usuario = $1', [normalizedUser]);
 
     const user = rows[0];
 
@@ -32,7 +32,7 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, usuario: user.usuario, role: user.role },
       JWT_SECRET,
       { expiresIn: '8h' }
     );
@@ -43,7 +43,8 @@ export const login = async (req, res) => {
       user: {
         id: user.id,
         nome: user.nome,
-        email: user.email,
+        usuario: user.usuario,
+        matricula: user.matricula,
         role: user.role
       }
     });

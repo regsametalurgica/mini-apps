@@ -22,16 +22,16 @@ export const Dashboard = () => {
         
         // Se for admin, busca todos. Se não, o ideal seria um endpoint /api/my-apps
         // Para simplificar agora, buscaremos de acordo com o papel.
-        let url = 'http://localhost:3000/api/admin/apps'; // Admin vê todos
+        let url = '/api/admin/apps'; // Admin vê todos
         
         if (user.role !== 'admin') {
           // Usuário comum: Buscaríamos apenas os dele. 
           // Vamos criar um endpoint rápido no backend ou filtrar aqui (filtrar é menos seguro, mas rápido para o MVP)
           // Mas vamos fazer o certo: buscar apenas as permissões dele.
-          const permsRes = await fetch(`http://localhost:3000/api/admin/user-permissions/${user.id}`, { headers });
+          const permsRes = await fetch(`/api/admin/user-permissions/${user.id}`, { headers });
           const userAppIds: string[] = await permsRes.json();
           
-          const allAppsRes = await fetch('http://localhost:3000/api/admin/apps', { headers });
+          const allAppsRes = await fetch('/api/admin/apps', { headers });
           const allApps: any[] = await allAppsRes.json();
           
           setApps(allApps.filter(a => userAppIds.includes(a.id)));

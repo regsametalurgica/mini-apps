@@ -8,14 +8,13 @@ export const Users = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   
   const token = useAuthStore((state) => state.token);
 
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/admin/users', {
+      const response = await fetch('/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -24,11 +23,12 @@ export const Users = () => {
       const data = await response.json();
       setUsers(data);
     } catch (err: any) {
-      setError(err.message);
+      console.error(err.message);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchUsers();
@@ -43,7 +43,8 @@ export const Users = () => {
   // Form State
   const [formData, setFormData] = useState({ 
     nome: '', 
-    email: '', 
+    usuario: '', 
+    matricula: '', 
     password: '', 
     role: 'user', 
     ativo: true 
@@ -52,13 +53,13 @@ export const Users = () => {
   // Filtro
   const filteredUsers = users.filter(user => 
     (user.nome?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    (user.email?.toLowerCase().includes(searchQuery.toLowerCase()))
+    (user.usuario?.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   // Ações
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ nome: '', email: '', password: '', role: 'user', ativo: true });
+    setFormData({ nome: '', usuario: '', matricula: '', password: '', role: 'user', ativo: true });
     setIsFormModalOpen(true);
   };
 
@@ -66,7 +67,8 @@ export const Users = () => {
     setEditingUser(user);
     setFormData({ 
       nome: user.nome, 
-      email: user.email, 
+      usuario: user.usuario, 
+      matricula: user.matricula || '', 
       password: '', // Senha em branco por padrão na edição
       role: user.role, 
       ativo: user.ativo 
@@ -84,8 +86,8 @@ export const Users = () => {
     try {
       const isEditing = !!editingUser;
       const url = isEditing 
-        ? `http://localhost:3000/api/admin/users/${editingUser.id}`
-        : 'http://localhost:3000/api/admin/users';
+        ? `/api/admin/users/${editingUser.id}`
+        : '/api/admin/users';
       
       const method = isEditing ? 'PUT' : 'POST';
       
@@ -113,7 +115,7 @@ export const Users = () => {
   const handleDelete = async () => {
     if (!userToDelete) return;
     try {
-      const response = await fetch(`http://localhost:3000/api/admin/users/${userToDelete}`, {
+      const response = await fetch(`/api/admin/users/${userToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -132,7 +134,7 @@ export const Users = () => {
     }
   };
 
-  const isAdminDefault = editingUser?.email === 'admin';
+  const isAdminDefault = editingUser?.usuario === 'admin';
 
   return (
     <div className="flex flex-col gap-8 h-full">
@@ -158,8 +160,9 @@ export const Users = () => {
       {/* Table List */}
       <div className="flex-1 bg-background-secondary border border-border-main rounded-xl overflow-hidden flex flex-col">
         <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main bg-[#161616] text-[12px] font-semibold text-content-tertiary uppercase tracking-wider">
-          <div className="col-span-4">Nome</div>
-          <div className="col-span-4">E-mail</div>
+          <div className="col-span-3">Nome</div>
+          <div className="col-span-3">Usuário</div>
+          <div className="col-span-2">Matrícula</div>
           <div className="col-span-2">Status</div>
           <div className="col-span-2 text-right">Ações</div>
         </div>
@@ -174,7 +177,7 @@ export const Users = () => {
           ) : (
             filteredUsers.map(user => (
               <div key={user.id} className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main items-center hover:bg-[#1A1A1A] transition-colors">
-                <div className="col-span-4 text-[14px] text-content-main font-medium truncate flex items-center gap-2">
+                <div className="col-span-3 text-[14px] text-content-main font-medium truncate flex items-center gap-2">
                   {user.nome}
                   {user.role === 'admin' && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-[#FFD700]/10 text-[#FFD700] border border-[#FFD700]/20">
@@ -182,8 +185,11 @@ export const Users = () => {
                     </span>
                   )}
                 </div>
-                <div className="col-span-4 text-[14px] text-content-secondary truncate">
-                  {user.email}
+                <div className="col-span-3 text-[14px] text-content-secondary truncate">
+                  {user.usuario}
+                </div>
+                <div className="col-span-2 text-[14px] text-content-secondary">
+                  {user.matricula || '-'}
                 </div>
                 <div className="col-span-2">
                   <span className={`inline-flex items-center px-2 py-1 rounded-md text-[11px] font-medium ${
@@ -204,7 +210,7 @@ export const Users = () => {
                   <button 
                     onClick={() => openDeleteModal(user.id)}
                     className="w-8 h-8 rounded-md bg-background-card border border-border-main flex items-center justify-center text-status-error hover:bg-status-error/10 hover:border-status-error/30 transition-all"
-                    disabled={user.email === 'admin'}
+                    disabled={user.usuario === 'admin'}
                   >
                     <i className="bi bi-trash"></i>
                   </button>
@@ -221,20 +227,29 @@ export const Users = () => {
           {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
         </h3>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input 
+              label="Nome Completo"
+              value={formData.nome}
+              onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+              placeholder="Ex: João da Silva"
+              required
+              disabled={isAdminDefault}
+            />
+            <Input 
+              label="Matrícula"
+              type="number"
+              value={formData.matricula}
+              onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
+              placeholder="0000"
+              disabled={isAdminDefault}
+            />
+          </div>
           <Input 
-            label="Nome Completo"
-            value={formData.nome}
-            onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-            placeholder="Ex: João da Silva"
-            required
-            disabled={isAdminDefault}
-          />
-          <Input 
-            label="E-mail"
-            type="email"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            placeholder="joao@regsa.local"
+            label="Usuário"
+            value={formData.usuario}
+            onChange={(e) => setFormData({ ...formData, usuario: e.target.value })}
+            placeholder="nome.sobrenome"
             required
             disabled={isAdminDefault}
           />

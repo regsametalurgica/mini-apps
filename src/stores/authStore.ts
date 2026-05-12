@@ -3,7 +3,8 @@ import { create } from 'zustand';
 interface User {
   id: string;
   nome: string;
-  email: string;
+  usuario: string;
+  matricula?: number;
   role: string;
 }
 
