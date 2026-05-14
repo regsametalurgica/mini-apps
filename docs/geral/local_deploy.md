@@ -30,13 +30,17 @@ npm install
 ```
 *(Aguarde o download e a instalação de todos os pacotes listados no `package.json`)*.
 
-### 3. Configurar Variáveis de Ambiente (Se aplicável)
-Neste momento inicial, se o projeto depender de APIs externas para funcionar completamente, crie um arquivo `.env` na raiz do projeto copiando o modelo `.env.example` (se existir).
+### 3. Configurar Variáveis de Ambiente
+Crie um arquivo `.env` na raiz do projeto copiando o modelo `.env.example` (se existir) ou criando um novo com as seguintes chaves:
 
-```bash
-cp .env.example .env
+```env
+DB_HOST=localhost
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha
+DB_NAME=mini_apps
+DB_PORT=5432
+VITE_API_URL=http://localhost:3000
 ```
-*(Ajuste os valores dentro do `.env` conforme os URLs locais do seu backend, se necessário)*.
 
 ### 4. Iniciar o Servidor de Desenvolvimento
 
@@ -74,8 +78,11 @@ Para colocar a aplicação no ar para os usuários da rede interna da empresa, v
 2. **Inicie o Servidor Único:**
    O script abaixo inicializa o backend, que também servirá os arquivos estáticos recém-criados.
    ```bash
-   npm start
+   npm run start
    ```
 
 3. **Acesso Final:**
    A aplicação completa (API + Interface) estará disponível na porta configurada (ex: **http://localhost:3000**). Este é o IP e a porta que você deve compartilhar com os usuários na rede.
+
+---
+*Documentação atualizada em: 14/05/2026*

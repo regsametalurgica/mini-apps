@@ -18,7 +18,7 @@ const pool = new Pool({
 });
 
 const apps = [
-  { id: 'cep', nome: 'Lançamento - CEP', rota: '/apps/cep', icone: 'bi-geo-alt' },
+  { id: 'cep', nome: 'Controle estatístico - CEP', rota: '/apps/cep', icone: 'bi-graph-up' },
   { id: 'printers', nome: 'Printers', rota: '/apps/printers', icone: 'bi-printer' },
   { id: 'ia', nome: 'Resumo por IA', rota: '/apps/ia', icone: 'bi-robot' },
   { id: 'etiquetas', nome: 'Gerador de Etiquetas', rota: '/apps/etiquetas', icone: 'bi-tags' },

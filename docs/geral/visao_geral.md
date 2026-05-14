@@ -83,3 +83,6 @@ Desta forma, todo o sistema fica disponível em uma única porta (ex: 3000), fac
 - **Porta Unificada:** Caso a porta 3000 (ou a definida no `.env`) esteja em uso, altere no `.env` para evitar conflitos.
 - **Rede Local:** Garanta que o servidor que está rodando o Node.js tenha IP estático ou nome de host fixo para que outros computadores possam acessar os Mini Apps.
 - **Segurança:** Nunca comite arquivos `.env` no repositório Git. Mantenha as senhas de banco seguras.
+
+---
+*Documentação atualizada em: 14/05/2026*

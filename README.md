@@ -9,6 +9,10 @@ Projeto desenvolvido para uso interno da empresa Regsa Metalúrgica como conjunt
 
 ## Documentação
 
-Toda a documentação técnica, detalhamento de arquitetura e guias de deploy estão centralizados na pasta `/docs`. 
+Toda a documentação técnica, detalhamento de mini apps e guias de deploy estão organizados na pasta `/docs`. 
 
-Para iniciar, leia a [Visão Geral](docs/visao_geral.md) e o [Guia de Deploy Local](docs/projeto-mini-app/local_deploy.md).
+Para iniciar, veja os documentos principais:
+- [Visão Geral do Projeto](docs/geral/visao_geral.md)
+- [Guia de Deploy Local](docs/geral/local_deploy.md)
+- [Controle Estatístico (CEP)](docs/cep/sobre-cep.md)
+- [Apoio RH](docs/apoio-rh/sobre-apoio-rh.md)
