@@ -23,6 +23,7 @@ const apps = [
   { id: 'ia', nome: 'Resumo por IA', rota: '/apps/ia', icone: 'bi-robot' },
   { id: 'etiquetas', nome: 'Gerador de Etiquetas', rota: '/apps/etiquetas', icone: 'bi-tags' },
   { id: 'sobre', nome: 'Sobre o App', rota: '/apps/sobre', icone: 'bi-info-circle' },
+  { id: 'apoio-rh', nome: 'Apoio RH', rota: '/apps/apoio-rh', icone: 'bi-people' },
 ];
 
 async function seedApps() {

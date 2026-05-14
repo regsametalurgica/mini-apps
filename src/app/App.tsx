@@ -6,6 +6,7 @@ import { Printers } from '../pages/apps/Printers';
 import { LancamentoCep } from '../pages/apps/LancamentoCep';
 import { GeradorEtiquetas } from '../pages/apps/GeradorEtiquetas';
 import { SobreApp } from '../pages/apps/SobreApp';
+import { ApoioRh } from '../pages/apps/ApoioRh';
 import { AdminLayout } from '../pages/admin/AdminLayout';
 import { AdminHome } from '../pages/admin/AdminHome';
 import { Users } from '../pages/admin/Users';
@@ -28,6 +29,7 @@ function App() {
             <Route path="cep" element={<LancamentoCep />} />
             <Route path="etiquetas" element={<GeradorEtiquetas />} />
             <Route path="sobre" element={<SobreApp />} />
+            <Route path="apoio-rh" element={<ApoioRh />} />
           </Route>
         </Route>
 
