@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useCepStore } from '../../stores/cepStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Input } from '../../components/ui/Input';
@@ -28,7 +28,7 @@ ChartJS.register(
 );
 
 export const LancamentoCep = () => {
-  const { data, registerMeasurement, isLoading } = useCepStore();
+  const { data, registerMeasurement } = useCepStore();
   const user = useAuthStore((state) => state.user);
 
   // Form State
@@ -118,7 +118,7 @@ export const LancamentoCep = () => {
         text: title,
         color: '#E1E1E1',
         align: 'start' as const,
-        font: { size: 16, weight: '600' }
+        font: { size: 16, weight: 'bold' as const }
       },
       annotation: {
         annotations: {

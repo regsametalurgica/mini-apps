@@ -75,7 +75,7 @@ export const useCepStore = create<CepState>((set) => ({
     }
   },
   isLoading: false,
-  loadCarta: async (op) => {
+  loadCarta: async (_op) => {
     set({ isLoading: true });
     // Simulação de delay de rede
     await new Promise(resolve => setTimeout(resolve, 800));

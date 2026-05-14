@@ -214,7 +214,7 @@ export const ApoioRh = () => {
               </div>
 
               <div className="flex justify-end gap-3">
-                <Button variant="outline" className="h-11 px-6 text-[13px]">Limpar Filtros</Button>
+                <Button variant="secondary" className="h-11 px-6 text-[13px]">Limpar Filtros</Button>
                 <Button className="h-11 px-10 text-[13px] font-bold flex items-center gap-2">
                   <i className="bi bi-search text-[14px]"></i>
                   PESQUISAR NA REDE
