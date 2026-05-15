@@ -54,55 +54,77 @@ export const ApoioRh = () => {
     setAutomationStatus('running');
     setAutomationLogs([]);
 
-    try {
-      const token = localStorage.getItem('token');
-      // Passar token na query string caso usemos EventSource, mas faremos fetch em stream por segurança.
-      // Modificamos temporariamente para não precisar mudar o middleware de auth para ler token de query
-      // vamos usar fetch stream parsing simples.
-      const response = await fetch('http://localhost:3000/api/rh/iniciar-automacao', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+    const MAX_ATTEMPTS = 3;
+    const RETRY_DELAY_MS = 3 * 60 * 1000; // 3 minutos
 
-      if (!response.body) throw new Error('Não foi possível obter o stream de dados.');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          setAutomationStatus(prev => prev === 'error' ? 'error' : 'done');
-          break;
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        if (attempt > 1) {
+          setAutomationLogs(prev => [...prev, { step: 'RETRY', message: `Tentativa de conexão ${attempt}/${MAX_ATTEMPTS}...` }]);
         }
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:3000/api/rh/iniciar-automacao', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.replace('data: ', ''));
-              setAutomationLogs(prev => [...prev, data]);
-              
-              if (data.step === 'ERRO') {
-                setAutomationStatus('error');
-              } else if (data.step === 'CONCLUIDO') {
-                setAutomationStatus('done');
-              }
-            } catch (e) {
-              // Ignore parse errors on incomplete chunks
+        if (!response.body) throw new Error('Não foi possível obter o stream de dados.');
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            setAutomationStatus(prev => prev === 'error' ? 'error' : 'done');
+            return; // Sucesso na conexão e stream
+          }
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.replace('data: ', ''));
+                
+                // Se o backend enviar um evento de AGUARDANDO, mantemos o status como running
+                // O backend já cuida do seu próprio loop de retry para erros internos do Playwright
+                setAutomationLogs(prev => [...prev, data]);
+                
+                if (data.step === 'ERRO') {
+                  // Se o backend desistiu após as 3 tentativas dele
+                  setAutomationStatus('error');
+                  return;
+                } else if (data.step === 'CONCLUIDO') {
+                  setAutomationStatus('done');
+                  return;
+                }
+              } catch (e) {}
             }
           }
         }
+      } catch (error: any) {
+        console.error(`Falha na conexão (Tentativa ${attempt}):`, error);
+        
+        if (attempt < MAX_ATTEMPTS) {
+          setAutomationLogs(prev => [...prev, { 
+            step: 'AGUARDANDO', 
+            message: `Falha de conexão: ${error.message}. Aguardando 3 minutos para tentar novamente...` 
+          }]);
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        } else {
+          setAutomationStatus('error');
+          setAutomationLogs(prev => [...prev, { 
+            step: 'ERRO', 
+            message: `Não foi possível estabelecer conexão após ${MAX_ATTEMPTS} tentativas: ${error.message}` 
+          }]);
+        }
       }
-    } catch (error: any) {
-      console.error(error);
-      setAutomationStatus('error');
-      setAutomationLogs(prev => [...prev, { step: 'ERRO', message: `Erro ao iniciar automação: ${error.message}` }]);
     }
   };
 
