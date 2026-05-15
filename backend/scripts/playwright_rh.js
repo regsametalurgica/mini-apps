@@ -40,17 +40,17 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
     }
 
     console.log(`Caminho para o portal: ${portalUrl}`);
-    await page.goto(portalUrl, { waitUntil: 'networkidle' });
+    await page.goto(portalUrl, { waitUntil: 'networkidle', timeout: 60000 });
 
     // 1. Realizar Login no Kairos
     onProgress({ step: 1, message: 'Realizando login no Kairos...' });
     console.log('Realizando login...');
-    await page.waitForSelector('input[type="text"], input[type="email"], #LogOnModel_UserName', { state: 'visible' });
+    await page.waitForSelector('input[type="text"], input[type="email"], #LogOnModel_UserName', { state: 'visible', timeout: 30000 });
     await page.locator('input[type="text"], input[type="email"], #LogOnModel_UserName').first().fill(portalUser);
     await page.locator('input[type="password"], #LogOnModel_Password').first().fill(portalPass);
     await page.locator('button:has-text("Entrar"), input[value="Entrar"], .btn-success').first().click();
     
-    await page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => console.log('Sem navigation explícita após login, prosseguindo...'));
+    await page.waitForNavigation({ waitUntil: 'networkidle', timeout: 30000 }).catch(() => console.log('Sem navigation explícita após login, prosseguindo...'));
 
     console.log('✅ Etapa 1 concluída: Acesso e Login realizados com sucesso no Kairos!');
     onProgress({ step: 2, message: 'Verificando se existe mensagem de novidades para ignorar...' });
@@ -58,7 +58,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
     // 2. Fechar modal (se existir)
     console.log('Verificando se há modal de comunicados...');
     try {
-      const btnFecharModal = await page.waitForSelector('#closeModal, #soCloseModal', { timeout: 8000 });
+      const btnFecharModal = await page.waitForSelector('#closeModal, #soCloseModal', { timeout: 12000 });
       if (btnFecharModal) {
         console.log('Modal detectado! Fechando...');
         const btnNaoVerMais = await page.$('#closeModal');
@@ -67,7 +67,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
         } else {
           await page.click('#soCloseModal', { force: true });
         }
-        await page.waitForTimeout(2000); 
+        await page.waitForTimeout(3000); 
         console.log('✅ Modal fechado com sucesso.');
       }
     } catch (e) {
@@ -80,7 +80,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
     // 3. Acessar Marcações
     console.log('Acessando a aba Marcações (#Tab2)...');
     await page.click('#Tab2', { force: true });
-    await page.waitForTimeout(3000); 
+    await page.waitForTimeout(5000); 
 
     // 4. Aplicar Filtro de Data
     onProgress({ step: 4, message: 'Aplicando filtro para exibir apenas marcações de hoje...' });
@@ -93,7 +93,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
     try {
       const toggleFiltro = await page.$('text="A exibir resultados do filtro"');
       if (toggleFiltro) await toggleFiltro.click({ force: true });
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000);
     } catch (e) {}
 
     await page.evaluate((dataAlvo) => {
@@ -123,7 +123,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
       }
     }, dataHojeStr);
 
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(6000);
     console.log('✅ Etapa 4 concluída: Filtro de data aplicado.');
 
     // 5. Ler a tabela e navegar pela paginação
@@ -205,7 +205,7 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
           if (!isBtnDisabled) {
             console.log('Avançando para a próxima página...');
             await nextBtn.click({ force: true });
-            await page.waitForTimeout(4000); // Aguardar o Kairos carregar a próxima tabela
+            await page.waitForTimeout(6000); // Aguardar o Kairos carregar a próxima tabela
             paginaAtual++;
           } else {
             console.log('Chegou na última página (botão Próximo desabilitado).');
@@ -228,24 +228,26 @@ export async function extrairMarcacoesRH(onProgress = () => {}) {
       onProgress({ step: 6, message: `Gravando todos os ${todasMarcacoes.length} registros no banco local PostgreSQL...` });
       console.log('Gravando no banco de dados postgres...');
       
+      let inseridos = 0;
       for (const m of todasMarcacoes) {
         const [dataPart, horaPart] = m.data_hora.split(' ');
         const dataFormatada = dataPart.split('/').reverse().join('-') + ' ' + horaPart;
         
-        await pool.query(
-          'INSERT INTO rh_marcacoes (relogio_tipo, pessoa, pis, data_hora) VALUES ($1, $2, $3, $4)',
+        const res = await pool.query(
+          'INSERT INTO rh_marcacoes (relogio_tipo, pessoa, pis, data_hora) VALUES ($1, $2, $3, $4) ON CONFLICT (pis, data_hora) DO NOTHING',
           [m.relogio_tipo, m.pessoa, m.pis, dataFormatada]
         );
+        if (res.rowCount > 0) inseridos++;
       }
-      console.log('✅ Dados gravados no Postgres com sucesso!');
-      onProgress({ step: 'CONCLUIDO', message: `Automação concluída! ${todasMarcacoes.length} registros salvos hoje em ${paginaAtual} páginas.` });
+      console.log(`✅ Dados gravados no Postgres com sucesso! (${inseridos} novos registros)`);
+      onProgress({ step: 'CONCLUIDO', message: `Automação concluída! ${inseridos} novos registros salvos hoje.` });
       await browser.close();
-      return { success: true, count: todasMarcacoes.length, message: `Sucesso! ${todasMarcacoes.length} registros.` };
+      return { success: true, count: inseridos, totalFound: todasMarcacoes.length, message: `Sucesso! ${inseridos} novos registros.` };
     } else {
       console.log('Nenhuma marcação de hoje encontrada para gravar.');
       onProgress({ step: 'CONCLUIDO', message: 'Nenhuma marcação encontrada na data atual após ler as páginas.' });
       await browser.close();
-      return { success: true, count: 0, message: 'Nenhuma marcação encontrada para gravar.' };
+      return { success: true, count: 0, totalFound: 0, message: 'Nenhuma marcação encontrada para gravar.' };
     }
 
   } catch (error) {

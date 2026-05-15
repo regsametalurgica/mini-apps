@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { ToastContainer } from '../../components/ui/ToastContainer';
 
 export const AdminLayout = () => {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export const AdminLayout = () => {
   const navItems = [
     { path: '/admin', icon: 'bi-house-door', label: 'Início', exact: true },
     { path: '/admin/usuarios', icon: 'bi-people', label: 'Usuários' },
-    { path: '/admin/aplicacoes', icon: 'bi-grid', label: 'Aplicações' },
+    { path: '/admin/aplicacoes', icon: 'bi-shield-lock', label: 'Permissões' },
     { path: '/admin/configuracoes', icon: 'bi-gear', label: 'Configurações' },
   ];
 
@@ -106,7 +107,7 @@ export const AdminLayout = () => {
           <Outlet />
         </main>
       </div>
-
+      <ToastContainer />
     </div>
   );
 };
