@@ -37,19 +37,20 @@ async function initRhTables() {
     `);
     console.log('Tabela "funcionarios_regsa" verificada/criada.');
 
-    // Tabela: marcacoes_ponto_regsa
+    // Tabela: rh_marcacoes (Solicitada pelo usuário)
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS marcacoes_ponto_regsa (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        funcionario_id UUID REFERENCES funcionarios_regsa(id) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS rh_marcacoes (
+        id SERIAL PRIMARY KEY,
+        matricula VARCHAR(20),
+        nome VARCHAR(255),
         data DATE NOT NULL,
         hora TIME NOT NULL,
-        tipo VARCHAR(20),
-        origem VARCHAR(50),
-        criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        tipo VARCHAR(50),
+        origem VARCHAR(100) DEFAULT 'Automação Playwright',
+        extraido_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('Tabela "marcacoes_ponto_regsa" verificada/criada.');
+    console.log('Tabela "rh_marcacoes" verificada/criada.');
 
     console.log('Tabelas de RH inicializadas com sucesso!');
   } catch (error) {

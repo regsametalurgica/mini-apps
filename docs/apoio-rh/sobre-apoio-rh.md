@@ -8,8 +8,9 @@ Digitalizar processos de RH, automatizar a auditoria de ponto e fornecer ferrame
 ## ✨ Funcionalidades Principais
 
 ### 🕒 Agente de Marcações
-Agente inteligente integrado ao Relógio de Ponto Dimep.
-- Visualização do fluxo de dados: Relógio -> Banco de Dados -> Agente de IA -> Saída de Informação.
+Agente inteligente integrado ao Relógio de Ponto e Portal de RH.
+- **Automação Playwright:** Extração automática e diária de marcações diretamente do portal corporativo.
+- Visualização do fluxo de dados: Portal/Relógio -> Banco de Dados (tabela `rh_marcacoes`) -> Agente de IA -> Saída de Informação.
 - Auditoria automatizada de inconsistências de ponto (faltas, atrasos, horas extras).
 
 ### 🤖 Chat IA Local
