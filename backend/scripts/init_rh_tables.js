@@ -38,15 +38,14 @@ async function initRhTables() {
     console.log('Tabela "funcionarios_regsa" verificada/criada.');
 
     // Tabela: rh_marcacoes (Solicitada pelo usuário)
+    await pool.query(`DROP TABLE IF EXISTS rh_marcacoes;`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS rh_marcacoes (
         id SERIAL PRIMARY KEY,
-        matricula VARCHAR(20),
-        nome VARCHAR(255),
-        data DATE NOT NULL,
-        hora TIME NOT NULL,
-        tipo VARCHAR(50),
-        origem VARCHAR(100) DEFAULT 'Automação Playwright',
+        relogio_tipo VARCHAR(255),
+        pessoa VARCHAR(255),
+        pis VARCHAR(50),
+        data_hora TIMESTAMP,
         extraido_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       );
     `);
