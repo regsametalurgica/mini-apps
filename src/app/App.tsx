@@ -11,6 +11,7 @@ import { AdminLayout } from '../pages/admin/AdminLayout';
 import { AdminHome } from '../pages/admin/AdminHome';
 import { Users } from '../pages/admin/Users';
 import { Applications } from '../pages/admin/Applications';
+import { Settings } from '../pages/admin/Settings';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
 function App() {
@@ -39,6 +40,7 @@ function App() {
             <Route index element={<AdminHome />} />
             <Route path="usuarios" element={<Users />} />
             <Route path="aplicacoes" element={<Applications />} />
+            <Route path="configuracoes" element={<Settings />} />
           </Route>
         </Route>
 

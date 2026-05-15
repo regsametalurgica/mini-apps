@@ -1,5 +1,6 @@
 import { extrairMarcacoesRH } from '../scripts/playwright_rh.js';
 import pool from '../config/db.js';
+import { sendEmail } from '../services/emailService.js';
 
 export const iniciarAutomacaoRH = async (req, res) => {
   // Configurar headers para SSE (Server-Sent Events)
@@ -19,8 +20,42 @@ export const iniciarAutomacaoRH = async (req, res) => {
 
     if (result.success) {
       res.write(`data: ${JSON.stringify({ step: 'CONCLUIDO', message: result.message || 'Automação finalizada.' })}\n\n`);
+      
+      // Lógica de Envio de E-mail
+      try {
+        const appRes = await pool.query('SELECT notificar_por_email, email_notificacao FROM aplicativos WHERE id = $1', ['apoio-rh']);
+        const app = appRes.rows[0];
+
+        if (app && app.notificar_por_email && app.email_notificacao) {
+          console.log(`Enviando e-mail de notificação para: ${app.email_notificacao}`);
+          await sendEmail({
+            to: app.email_notificacao,
+            subject: 'Automação Kairos Dimep',
+            text: `Informamos que a automação local integrada ao ponto dimep foi executada e trouxe os seguintes resultados: 
+            Número de marcações encontradas na data atual: ${result.count || 0}, 
+            Erros durante a execução: 0`
+          });
+        }
+      } catch (mailErr) {
+        console.error('Erro ao processar envio de e-mail pós-automação:', mailErr);
+      }
+
     } else {
       res.write(`data: ${JSON.stringify({ step: 'ERRO', message: result.message || result.error })}\n\n`);
+      
+      // Enviar e-mail de erro também se estiver habilitado
+      try {
+        const appRes = await pool.query('SELECT notificar_por_email, email_notificacao FROM aplicativos WHERE id = $1', ['apoio-rh']);
+        const app = appRes.rows[0];
+        if (app && app.notificar_por_email && app.email_notificacao) {
+          await sendEmail({
+            to: app.email_notificacao,
+            subject: 'Erro: Automação Kairos Dimep',
+            text: `Informamos que a automação local integrada ao ponto dimep falhou. 
+            Erro: ${result.error || result.message}`
+          });
+        }
+      } catch (e) {}
     }
   } catch (error) {
     res.write(`data: ${JSON.stringify({ step: 'ERRO', message: 'Erro crítico no servidor.', error: error.message })}\n\n`);

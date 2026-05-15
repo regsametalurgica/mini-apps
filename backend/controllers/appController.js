@@ -60,3 +60,21 @@ export const updateUserPermissions = async (req, res) => {
     client.release();
   }
 };
+
+// Atualizar configurações de e-mail de um aplicativo
+export const updateAppEmailSettings = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { notificar_por_email, email_notificacao } = req.body;
+
+    await pool.query(
+      'UPDATE aplicativos SET notificar_por_email = $1, email_notificacao = $2 WHERE id = $3',
+      [notificar_por_email, email_notificacao, id]
+    );
+
+    res.json({ success: true, message: 'Configurações de e-mail atualizadas!' });
+  } catch (error) {
+    console.error('Erro ao atualizar configurações de e-mail do app:', error);
+    res.status(500).json({ success: false, message: 'Erro ao atualizar configurações.' });
+  }
+};

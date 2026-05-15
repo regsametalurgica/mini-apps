@@ -19,6 +19,7 @@ export const AdminLayout = () => {
     { path: '/admin', icon: 'bi-house-door', label: 'Início', exact: true },
     { path: '/admin/usuarios', icon: 'bi-people', label: 'Usuários' },
     { path: '/admin/aplicacoes', icon: 'bi-grid', label: 'Aplicações' },
+    { path: '/admin/configuracoes', icon: 'bi-gear', label: 'Configurações' },
   ];
 
   return (
