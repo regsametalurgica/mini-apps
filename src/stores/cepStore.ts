@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useAuthStore } from './authStore';
 
 interface CepLimits {
   lsc: number;
@@ -35,7 +36,9 @@ interface CepData {
 interface CepState {
   data: CepData | null;
   isLoading: boolean;
+  error: string | null;
   loadCarta: (op: string) => Promise<void>;
+  reset: () => void;
   registerMeasurement: (measurement: {
     v1: number;
     v2: number;
@@ -45,61 +48,93 @@ interface CepState {
     media: number;
     range: number;
     observacao: string;
-  }) => void;
+  }) => Promise<void>;
 }
 
-export const useCepStore = create<CepState>((set) => ({
-  data: {
-    op: "1958",
-    numeroCarta: "12345",
-    cp: 7.34,
-    cpk: 7.03,
-    numeroPeca: "MOLA-TRASEIRA-X",
-    equipamento: "PRENSA-05",
-    caracteristica: "DIÂMETRO EXTERNO",
-    sequencia: "010",
-    revisaoFicha: "REV-03",
-    setor: "MOLAS",
-    especificacao: "18.42 ±0.10",
-    cliente: "FIAT",
-    tamanhoAmostra: 5,
-    frequencia: "30min",
-    limitesControle: {
-      xbar: { lsc: 18.52, media: 18.42, lic: 18.32 },
-      range: { lsc: 0.45, media: 0.30, lic: 0.15 }
-    },
-    historico: {
-      xbar: [18.40, 18.37, 18.50, 18.32, 18.45, 18.51, 18.36, 18.36, 18.50, 18.39, 18.40, 18.39, 18.36, 18.33, 18.46, 18.51, 18.46, 18.47, 18.44, 18.43, 18.36, 18.39, 18.38, 18.47, 18.50],
-      range: [0.30, 0.32, 0.39, 0.22, 0.27, 0.24, 0.21, 0.28, 0.24, 0.22, 0.23, 0.28, 0.38, 0.22, 0.29, 0.22, 0.35, 0.33, 0.26, 0.28, 0.22, 0.21, 0.24, 0.33, 0.36],
-      labels: Array.from({ length: 25 }, (_, i) => (i + 1).toString())
+export const useCepStore = create<CepState>((set, get) => ({
+  data: null,
+  isLoading: false,
+  error: null,
+
+  reset: () => set({ data: null, error: null }),
+
+  loadCarta: async (op) => {
+    const { user, token } = useAuthStore.getState();
+    set({ isLoading: true, error: null });
+
+    try {
+      const response = await fetch('/api/cep/load', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ op, matricula: user?.matricula })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao carregar carta CEP');
+      }
+
+      set({ data: result, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+      throw error;
     }
   },
-  isLoading: false,
-  loadCarta: async (_op) => {
-    set({ isLoading: true });
-    // Simulação de delay de rede
-    await new Promise(resolve => setTimeout(resolve, 800));
-    // Aqui seria o fetch real
-    set({ isLoading: false });
-  },
-  registerMeasurement: (measurement) => {
-    set((state) => {
-      if (!state.data) return state;
-      
-      const newXbar = [...state.data.historico.xbar, measurement.media].slice(-25);
-      const newRange = [...state.data.historico.range, measurement.range].slice(-25);
-      const newLabels = Array.from({ length: newXbar.length }, (_, i) => (i + 1).toString());
 
-      return {
-        data: {
-          ...state.data,
-          historico: {
-            xbar: newXbar,
-            range: newRange,
-            labels: newLabels
+  registerMeasurement: async (measurement) => {
+    const { user, token } = useAuthStore.getState();
+    const { data } = get();
+    
+    if (!data) return;
+
+    try {
+      const response = await fetch('/api/cep/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...measurement,
+          op: data.op,
+          numeroCarta: data.numeroCarta,
+          usuario: user?.nome,
+          dataHora: new Date().toISOString()
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao registrar medição');
+      }
+
+      // Atualiza o estado local para refletir a nova medição no gráfico imediatamente
+      set((state) => {
+        if (!state.data) return state;
+        
+        const newXbar = [...state.data.historico.xbar, measurement.media].slice(-25);
+        const newRange = [...state.data.historico.range, measurement.range].slice(-25);
+        const newLabels = Array.from({ length: newXbar.length }, (_, i) => (i + 1).toString());
+
+        return {
+          data: {
+            ...state.data,
+            historico: {
+              xbar: newXbar,
+              range: newRange,
+              labels: newLabels
+            }
           }
-        }
-      };
-    });
+        };
+      });
+    } catch (error: any) {
+      console.error('Erro no registro:', error);
+      throw error;
+    }
   }
 }));

@@ -14,11 +14,12 @@ Centralizar e digitalizar o processo de CEP industrial, oferecendo rastreabilida
 - **Detecção de Desvios:** Destaque visual automático para pontos que ultrapassam os limites estabelecidos.
 
 ## 🔄 Fluxo de Operação
-1. O operador informa a **OP** e clica em Iniciar.
-2. O sistema carrega os parâmetros da **Carta CEP** do ERP.
-3. O operador insere as medições e clica em **Registrar**.
-4. Os dados são enviados ao ERP para persistência oficial.
-5. O gráfico é atualizado instantaneamente com o novo ponto.
+1. **Entrada Obrigatória:** Toda vez que o operador acessa o app, o sistema limpa sessões anteriores e abre um modal de busca.
+2. **Identificação:** O operador informa a **OP**. O sistema captura automaticamente a **Matrícula** do usuário logado.
+3. **Carga de Dados:** Uma requisição é enviada ao backend (`OP` + `Matrícula`).
+4. **Integração:** O sistema carrega os parâmetros da **Carta CEP** (limites, histórico, dados da peça).
+5. **Registro:** O operador insere as medições e clica em **Registrar**.
+6. **Persistência:** Os dados são enviados ao ERP para persistência oficial e os gráficos são atualizados em tempo real.
 
 ---
-*Documentação atualizada em: 14/05/2026*
+*Documentação atualizada em: 15/05/2026*

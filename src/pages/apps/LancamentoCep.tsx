@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCepStore } from '../../stores/cepStore';
 import { useAuthStore } from '../../stores/authStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
+import { Modal } from '../../components/ui/Modal';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,8 +30,16 @@ ChartJS.register(
 );
 
 export const LancamentoCep = () => {
-  const { data, registerMeasurement } = useCepStore();
+  const { data, isLoading, error, loadCarta, registerMeasurement, reset } = useCepStore();
   const user = useAuthStore((state) => state.user);
+  const navigate = useNavigate();
+
+  // Sidebar State
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(!data);
+  const [opInput, setOpInput] = useState('');
 
   // Form State
   const [vValues, setVValues] = useState({ v1: '', v2: '', v3: '', v4: '', v5: '' });
@@ -39,6 +49,10 @@ export const LancamentoCep = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
 
+  // Reset store on mount to ensure modal always shows up
+  useEffect(() => {
+    reset();
+  }, [reset]);
 
   // Cálculos automáticos
   const stats = useMemo(() => {
@@ -57,6 +71,25 @@ export const LancamentoCep = () => {
     };
   }, [vValues]);
 
+  const handleStart = async () => {
+    if (!opInput) {
+      alert("Por favor, digite o número da Ordem de Produção.");
+      return;
+    }
+
+    try {
+      await loadCarta(opInput);
+      setIsModalOpen(false);
+    } catch (err) {
+      // Erro já é tratado na store e exibido se necessário
+    }
+  };
+
+  const handleCancel = () => {
+    reset();
+    navigate('/dashboard');
+  };
+
   // Lógica de navegação com Enter
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, field: string) => {
     if (e.key === 'Enter') {
@@ -73,32 +106,80 @@ export const LancamentoCep = () => {
     }
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     const values = Object.values(vValues).map(v => parseFloat(v));
     if (values.some(v => isNaN(v))) {
       alert("Por favor, preencha todos os valores (V1 a V5).");
       return;
     }
 
-    registerMeasurement({
-      v1: values[0],
-      v2: values[1],
-      v3: values[2],
-      v4: values[3],
-      v5: values[4],
-      media: stats.media,
-      range: stats.range,
-      observacao
-    });
+    try {
+      await registerMeasurement({
+        v1: values[0],
+        v2: values[1],
+        v3: values[2],
+        v4: values[3],
+        v5: values[4],
+        media: stats.media,
+        range: stats.range,
+        observacao
+      });
 
-    // Limpar formulário e focar no primeiro campo
-    setVValues({ v1: '', v2: '', v3: '', v4: '', v5: '' });
-    setObservacao('');
-    const firstField = document.querySelector('input[name="v1"]') as HTMLInputElement;
-    firstField?.focus();
+      // Limpar formulário e focar no primeiro campo
+      setVValues({ v1: '', v2: '', v3: '', v4: '', v5: '' });
+      setObservacao('');
+      const firstField = document.querySelector('input[name="v1"]') as HTMLInputElement;
+      firstField?.focus();
+    } catch (err) {
+      alert("Erro ao registrar medição. Verifique a conexão.");
+    }
   };
 
-  if (!data) return <div className="p-8 text-center">Carregando dados da carta...</div>;
+  if (isModalOpen || !data) {
+    return (
+      <Modal isOpen={true} onClose={handleCancel}>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
+              <i className="bi bi-search text-primary"></i>
+              Iniciar Controle CEP
+            </h2>
+            <p className="text-[14px] text-content-tertiary">
+              Informe o número da Ordem de Produção para carregar a carta correspondente.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Input 
+              label="Número da Ordem de Produção (OP)" 
+              placeholder="Ex: 1958"
+              value={opInput}
+              onChange={(e) => setOpInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+              autoFocus
+              icon="bi-hash"
+            />
+            
+            {error && (
+              <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
+                <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
+                <span className="text-[12px] text-status-error font-medium">{error}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <Button variant="secondary" onClick={handleCancel} className="flex-1">
+              CANCELAR
+            </Button>
+            <Button onClick={handleStart} isLoading={isLoading} className="flex-[2]">
+              INICIAR PROCESSO
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
 
   // Verificadores de Limites
   const isXbarOut = stats.media > data.limitesControle.xbar.lsc || stats.media < data.limitesControle.xbar.lic;
@@ -205,7 +286,7 @@ export const LancamentoCep = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#0F0F0F] text-content-main overflow-hidden">
+    <div className="flex h-full bg-[#0F0F0F] text-content-main overflow-hidden relative">
       {/* MENU ESQUERDO — Área Operacional */}
       <div className="w-[380px] bg-background-secondary border-r border-border-main p-6 flex flex-col gap-6 shrink-0 overflow-y-auto">
         {/* Resumo Topo */}
@@ -318,32 +399,54 @@ export const LancamentoCep = () => {
         </div>
       </div>
 
-      {/* MENU FIXO DIREITO — Dados da Carta */}
-      <div className="w-[300px] bg-background-secondary border-l border-border-main p-6 shrink-0 overflow-y-auto hidden xl:flex flex-col gap-6">
-        <h3 className="text-[14px] font-bold text-content-tertiary uppercase tracking-widest border-b border-border-main pb-3">
-          Dados da Carta
-        </h3>
-        
-        <div className="flex flex-col gap-5">
-          {[
-            { label: 'Ordem de Produção', value: data.op },
-            { label: 'Nº Carta', value: data.numeroCarta },
-            { label: 'Nº Peça', value: data.numeroPeca },
-            { label: 'Equipamento', value: data.equipamento },
-            { label: 'Característica', value: data.caracteristica },
-            { label: 'Sequência', value: data.sequencia },
-            { label: 'Revisão da Ficha', value: data.revisaoFicha },
-            { label: 'Setor', value: data.setor },
-            { label: 'Especificação', value: data.especificacao },
-            { label: 'Cliente', value: data.cliente },
-            { label: 'Tam. Amostra', value: data.tamanhoAmostra },
-            { label: 'Frequência', value: data.frequencia },
-          ].map((item) => (
-            <div key={item.label} className="flex flex-col gap-1">
-              <span className="text-[10px] text-content-tertiary uppercase font-medium">{item.label}</span>
-              <span className="text-[13px] text-content-secondary font-medium">{item.value}</span>
-            </div>
-          ))}
+      {/* MENU DIREITO COLAPSÁVEL — Dados da Carta */}
+      <div 
+        className={`bg-background-secondary border-l border-border-main transition-all duration-300 ease-in-out shrink-0 overflow-hidden flex flex-col ${
+          isRightSidebarOpen ? 'w-[280px]' : 'w-[48px]'
+        }`}
+      >
+        {/* Toggle Button Strip */}
+        <div className="h-14 flex items-center justify-center border-b border-border-main shrink-0">
+          <button 
+            onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+              isRightSidebarOpen ? 'bg-primary/10 text-primary' : 'text-content-tertiary hover:text-content-main'
+            }`}
+            title={isRightSidebarOpen ? "Recolher informações" : "Ver informações da carta"}
+          >
+            <i className={`bi ${isRightSidebarOpen ? 'bi-chevron-right' : 'bi-info-circle'} text-[18px]`}></i>
+          </button>
+        </div>
+
+        {/* Content - Only visible when open */}
+        <div className={`p-6 flex flex-col gap-6 overflow-y-auto transition-opacity duration-200 ${
+          isRightSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <h3 className="text-[12px] font-bold text-content-tertiary uppercase tracking-widest border-b border-border-main pb-3 whitespace-nowrap">
+            Dados da Carta
+          </h3>
+          
+          <div className="flex flex-col gap-5">
+            {[
+              { label: 'Ordem de Produção', value: data.op },
+              { label: 'Nº Carta', value: data.numeroCarta },
+              { label: 'Nº Peça', value: data.numeroPeca },
+              { label: 'Equipamento', value: data.equipamento },
+              { label: 'Característica', value: data.caracteristica },
+              { label: 'Sequência', value: data.sequencia },
+              { label: 'Revisão da Ficha', value: data.revisaoFicha },
+              { label: 'Setor', value: data.setor },
+              { label: 'Especificação', value: data.especificacao },
+              { label: 'Cliente', value: data.cliente },
+              { label: 'Tam. Amostra', value: data.tamanhoAmostra },
+              { label: 'Frequência', value: data.frequencia },
+            ].map((item) => (
+              <div key={item.label} className="flex flex-col gap-1">
+                <span className="text-[10px] text-content-tertiary uppercase font-medium whitespace-nowrap">{item.label}</span>
+                <span className="text-[13px] text-content-secondary font-medium">{item.value}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

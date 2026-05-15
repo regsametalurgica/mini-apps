@@ -3,6 +3,7 @@ import { login } from '../controllers/authController.js';
 import { getUsers, createUser, updateUser, deleteUser } from '../controllers/userController.js';
 import { getApps, getUserPermissions, updateUserPermissions, updateAppEmailSettings } from '../controllers/appController.js';
 import { iniciarAutomacaoRH, getMarcacoesRH } from '../controllers/rhController.js';
+import { loadCartaCEP, registerMeasurementCEP } from '../controllers/cepController.js';
 import { getSettings, updateSettings } from '../controllers/settingsController.js';
 import { verifyToken, isAdmin } from '../middlewares/authMiddleware.js';
 
@@ -32,6 +33,10 @@ router.post('/admin/user-permissions', verifyToken, isAdmin, updateUserPermissio
 // Automação RH
 router.post('/rh/iniciar-automacao', verifyToken, iniciarAutomacaoRH);
 router.get('/rh/marcacoes', verifyToken, getMarcacoesRH);
+
+// Controle Estatístico de Processo (CEP)
+router.post('/cep/load', verifyToken, loadCartaCEP);
+router.post('/cep/register', verifyToken, registerMeasurementCEP);
 
 // Configurações do Sistema (Apenas Admin)
 router.get('/admin/settings', verifyToken, isAdmin, getSettings);

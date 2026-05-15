@@ -8,12 +8,14 @@ Este documento detalha a arquitetura técnica, integrações e tecnologias espec
 - **Integração de Gráficos:** `react-chartjs-2`.
 - **Estilização:** Tailwind CSS.
 
-## 🔌 Integração com ERP Protheus
-O mini app CEP atua como uma interface operacional, consumindo e enviando dados para o ERP Protheus através de uma API REST no backend Node.js.
+## 🔌 Integração com Backend
+O mini app CEP atua como uma interface operacional, consumindo e enviando dados para o servidor backend que intermedia a comunicação com o ERP.
 
-### Endpoints Principais:
-- `POST /erp/cep/load`: Carrega os dados da carta CEP a partir de uma OP e Usuário.
-- `POST /erp/cep/register`: Envia as medições, cálculos e observações para persistência oficial no ERP.
+### Endpoints da API:
+- `POST /api/cep/load`: Carrega os dados da carta CEP.
+  - **Payload:** `{ "op": "string", "matricula": number }`
+- `POST /api/cep/register`: Envia as medições para persistência.
+  - **Payload:** Dados da medição (V1..V5, Média, Range, OP, Carta, Usuário, Data/Hora).
 
 ## 🧮 Regras de Negócio e Cálculos
 O sistema implementa os seguintes cálculos estatísticos:
@@ -21,7 +23,7 @@ O sistema implementa os seguintes cálculos estatísticos:
 - **Amplitude (Range):** $R = V_{max} - V_{min}$.
 
 ## 🗄️ Persistência
-- **Dados Operacionais:** Persistidos exclusivamente no ERP Protheus. O mini app CEP não utiliza banco de dados local para armazenar medições, garantindo a integridade da "única fonte de verdade".
+- **Dados Operacionais:** Persistidos exclusivamente no ERP Protheus. O mini app CEP não utiliza banco de dados local para armazenar medições, garantindo a integridade da "única fonte de verdade". O estado local é limpo a cada nova entrada no aplicativo para garantir que o operador sempre inicie uma nova consulta de OP.
 
 ---
-*Documentação atualizada em: 14/05/2026*
+*Documentação atualizada em: 15/05/2026*
