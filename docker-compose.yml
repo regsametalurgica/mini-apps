@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    container_name: miniapps_app
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=dba
+      - DB_PASSWORD=DBAdmin2000
+      - DB_NAME=miniapps
+      - DB_PORT=5432
+      - PORT=3000
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres:15-alpine
+    container_name: miniapps_db
+    environment:
+      POSTGRES_USER: dba
+      POSTGRES_PASSWORD: DBAdmin2000
+      POSTGRES_DB: miniapps
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+volumes:
+  pgdata:
+    driver: local

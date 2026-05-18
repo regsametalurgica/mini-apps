@@ -1,88 +1,83 @@
-# Instruções de Deploy - Ambiente Local
+# Instruções de Deploy - Ambiente Local e Produção
 
-Este guia descreve os passos necessários para configurar e executar o **Projeto Mini Apps** em um ambiente de desenvolvimento local.
-
-## Pré-requisitos
-
-Antes de iniciar, certifique-se de ter as seguintes ferramentas instaladas em sua máquina:
-
-1. **Node.js**: É recomendada a versão LTS atual (v18 ou superior).
-   - Verifique a instalação executando: `node -v`
-2. **NPM** (Node Package Manager) ou **Yarn**: Instalado juntamente com o Node.js.
-   - Verifique a instalação executando: `npm -v`
+Este guia descreve os passos necessários para configurar e executar o **Projeto Mini Apps** em ambiente local, servidor Linux ou via Docker.
 
 ---
 
-## Passo a Passo para Execução Local
+## 💻 1. Implementação em Ambiente Local (Windows/Mac/Linux)
 
-### 1. Obter o Código Fonte
-Certifique-se de que você está no diretório raiz do projeto. Caso tenha clonado o repositório, navegue até a pasta:
-```bash
-cd caminho/para/o/projeto-mini-apps
-```
+Ideal para desenvolvimento e testes rápidos.
 
-### 2. Instalar Dependências
-O projeto utiliza diversas bibliotecas externas (como React, TailwindCSS, etc.). Você precisa baixar essas dependências para a pasta `node_modules`.
-
-Execute o seguinte comando no terminal, dentro da raiz do projeto:
-```bash
-npm install
-```
-*(Aguarde o download e a instalação de todos os pacotes listados no `package.json`)*.
-
-### 3. Configurar Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto copiando o modelo `.env.example` (se existir) ou criando um novo com as seguintes chaves:
-
-```env
-DB_HOST=localhost
-DB_USER=seu_usuario
-DB_PASSWORD=sua_senha
-DB_NAME=mini_apps
-DB_PORT=5432
-VITE_API_URL=http://localhost:3000
-```
-
-### 4. Iniciar o Servidor de Desenvolvimento
-
-Para trabalhar no desenvolvimento da aplicação (Frontend + Backend local):
-
-1. **Frontend (React/Vite):** Abra um terminal e execute:
+1. **Instalar Dependências:**
    ```bash
-   npm run dev:frontend
+   npm install
    ```
-   *(Isto iniciará o Vite na porta 5173 com Hot Module Replacement).*
-
-2. **Backend (Node.js/Express):** Abra outro terminal e execute:
-   ```bash
-   npm run dev:backend
-   ```
-   *(Isto iniciará a API, geralmente na porta 3000).*
-
-### 5. Acessar a Aplicação (Modo Dev)
-
-- Abra o seu navegador e acesse a URL: **http://localhost:5173** para visualizar o frontend.
-- O frontend se comunicará com o backend localmente na porta 3000 (conforme configurado no seu `.env`).
+2. **Configurar Variáveis:** Crie o arquivo `.env` baseado no `.env.example`.
+3. **Iniciar Desenvolvimento:**
+   * **Frontend:** `npm run dev:frontend` (Porta 5173)
+   * **Backend:** `npm run dev:backend` (Porta 3000)
 
 ---
 
-## Deploy em Produção (Ambiente Local da Rede)
+## 🐧 2. Deploy em Servidor Linux (Ubuntu Server)
 
-Para colocar a aplicação no ar para os usuários da rede interna da empresa, você utilizará o servidor Node.js unificado.
+Recomendado para servidores físicos ou VMs na rede interna.
 
-1. **Gere o Build de Produção:**
-   Isso compilará o frontend para a pasta `dist`.
+### Pré-requisitos
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install nodejs npm postgresql -y
+sudo npm install -g pm2
+```
+
+### Passo a Passo
+1. **Clonar/Copiar o Projeto:** Navegue até `/var/www/mini-apps`.
+2. **Build do Frontend:**
    ```bash
+   npm install
    npm run build
    ```
-
-2. **Inicie o Servidor Único:**
-   O script abaixo inicializa o backend, que também servirá os arquivos estáticos recém-criados.
+3. **Gerenciar Processos com PM2:**
+   O PM2 garante que o servidor reinicie automaticamente em caso de falha ou reboot do servidor.
    ```bash
-   npm run start
+   pm2 start backend/server.js --name "mini-apps"
+   pm2 save
+   pm2 startup
    ```
-
-3. **Acesso Final:**
-   A aplicação completa (API + Interface) estará disponível na porta configurada (ex: **http://localhost:3000**). Este é o IP e a porta que você deve compartilhar com os usuários na rede.
+4. **Acesso:** A aplicação estará disponível na porta `3000` do IP do servidor.
 
 ---
-*Documentação atualizada em: 14/05/2026*
+
+## 🐳 3. Deploy via Docker (Simplificado com Persistência)
+
+A maneira mais rápida e isolada de rodar a aplicação com banco de dados incluso.
+
+### Estrutura
+O projeto inclui um `Dockerfile` e um `docker-compose.yml` prontos para uso.
+
+### Como Subir
+1. **Certifique-se de ter o Docker e Docker Compose instalados.**
+2. **Executar o comando:**
+   ```bash
+   docker-compose up -d --build
+   ```
+
+### Detalhes do Container
+* **Persistência:** O volume `pgdata` garante que os dados do PostgreSQL não sejam perdidos se o container for removido.
+* **Rede:** A aplicação expõe a porta `3000` (Web) e `5432` (Banco de Dados).
+* **Logs:** Para acompanhar o que está acontecendo: `docker-compose logs -f`.
+
+### Comandos Úteis
+* **Parar tudo:** `docker-compose down`
+* **Reiniciar App:** `docker-compose restart app`
+
+---
+
+## ⚙️ Variáveis de Ambiente Necessárias
+Certifique-se de que o `.env` contenha as seguintes chaves configuradas corretamente para o seu ambiente:
+- `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`
+- `JWT_SECRET` (Para autenticação)
+- `PROTHEUS_API_URL` (Para integração ERP)
+
+---
+*Documentação atualizada em: 15/05/2026*
