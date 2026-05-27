@@ -1,7 +1,7 @@
 import express from 'express';
 import { login } from '../controllers/authController.js';
 import { getUsers, createUser, updateUser, deleteUser } from '../controllers/userController.js';
-import { getApps, getUserPermissions, updateUserPermissions, updateAppEmailSettings } from '../controllers/appController.js';
+import { getApps, getUserPermissions, updateUserPermissions, updateAppSettings } from '../controllers/appController.js';
 import { iniciarAutomacaoRH, getMarcacoesRH } from '../controllers/rhController.js';
 import { loadCartaCEP, registerMeasurementCEP } from '../controllers/cepController.js';
 import { getSettings, updateSettings } from '../controllers/settingsController.js';
@@ -26,7 +26,7 @@ router.delete('/admin/users/:id', verifyToken, isAdmin, deleteUser);
 
 // Gestão de Aplicativos e Permissões
 router.get('/admin/apps', verifyToken, getApps); // Liberado para usuários logados
-router.put('/admin/apps/:id/email', verifyToken, isAdmin, updateAppEmailSettings);
+router.put('/admin/apps/:id/settings', verifyToken, isAdmin, updateAppSettings);
 router.get('/admin/user-permissions/:userId', verifyToken, getUserPermissions);
 router.post('/admin/user-permissions', verifyToken, isAdmin, updateUserPermissions);
 

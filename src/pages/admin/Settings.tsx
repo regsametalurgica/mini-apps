@@ -6,7 +6,14 @@ import { useToastStore } from '../../stores/useToastStore';
 export const Settings = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'apps'>('general');
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [appForm, setAppForm] = useState({ email: '', enabled: false });
+  const [appForm, setAppForm] = useState({ 
+    email: '', 
+    enabled: false,
+    cep_endpoint_load: '',
+    cep_endpoint_register: '',
+    cep_api_user: '',
+    cep_api_password: ''
+  });
   const [apps, setApps] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     smtp_host: '',
@@ -56,7 +63,11 @@ export const Settings = () => {
     setSelectedApp(app);
     setAppForm({
       email: app.email_notificacao || '',
-      enabled: app.notificar_por_email || false
+      enabled: app.notificar_por_email || false,
+      cep_endpoint_load: app.cep_endpoint_load || '',
+      cep_endpoint_register: app.cep_endpoint_register || '',
+      cep_api_user: app.cep_api_user || '',
+      cep_api_password: app.cep_api_password || ''
     });
   };
 
@@ -86,19 +97,31 @@ export const Settings = () => {
     if (!selectedApp) return;
     try {
       setSaving(true);
-      const response = await fetch(`/api/admin/apps/${selectedApp.id}/email`, {
+      const response = await fetch(`/api/admin/apps/${selectedApp.id}/settings`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ 
           notificar_por_email: appForm.enabled, 
-          email_notificacao: appForm.email 
+          email_notificacao: appForm.email,
+          cep_endpoint_load: appForm.cep_endpoint_load,
+          cep_endpoint_register: appForm.cep_endpoint_register,
+          cep_api_user: appForm.cep_api_user,
+          cep_api_password: appForm.cep_api_password
         }),
       });
       
       if (response.ok) {
         addToast('Configuração salva!', 'success', `As configurações do app ${selectedApp.nome} foram atualizadas.`);
         // Atualiza a lista local
-        setApps(apps.map(a => a.id === selectedApp.id ? { ...a, notificar_por_email: appForm.enabled, email_notificacao: appForm.email } : a));
+        setApps(apps.map(a => a.id === selectedApp.id ? { 
+          ...a, 
+          notificar_por_email: appForm.enabled, 
+          email_notificacao: appForm.email,
+          cep_endpoint_load: appForm.cep_endpoint_load,
+          cep_endpoint_register: appForm.cep_endpoint_register,
+          cep_api_user: appForm.cep_api_user,
+          cep_api_password: appForm.cep_api_password
+        } : a));
         // Retorna para a lista (melhor experiência como pedido)
         setSelectedApp(null);
       } else {
@@ -308,6 +331,70 @@ export const Settings = () => {
                         </Button>
                       </div>
                     </div>
+
+                    {selectedApp.rota === '/apps/cep' && (
+                      <div className="bg-background-main/50 border border-border-main p-6 rounded-2xl flex flex-col gap-6">
+                        <div className="flex flex-col gap-1">
+                          <h4 className="text-white font-bold text-sm">Integração API TOTVS / Endpoint</h4>
+                          <p className="text-content-tertiary text-[11px]">Endereços dos serviços de integração para o Controle Estatístico de Processo.</p>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[11px] font-bold text-content-tertiary uppercase tracking-wider">Endpoint de Carregamento (Load)</label>
+                          <input 
+                            type="text" 
+                            placeholder="ex: http://protheus:8084/rest/api/cep/load"
+                            value={appForm.cep_endpoint_load || ''}
+                            onChange={(e) => setAppForm({ ...appForm, cep_endpoint_load: e.target.value })}
+                            className="w-full h-10 bg-background-secondary border border-border-main rounded-lg px-4 text-sm text-content-main focus:outline-none focus:border-primary transition-colors"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                          <label className="text-[11px] font-bold text-content-tertiary uppercase tracking-wider">Endpoint de Registro (Register)</label>
+                          <input 
+                            type="text" 
+                            placeholder="ex: http://protheus:8084/rest/api/cep/register"
+                            value={appForm.cep_endpoint_register || ''}
+                            onChange={(e) => setAppForm({ ...appForm, cep_endpoint_register: e.target.value })}
+                            className="w-full h-10 bg-background-secondary border border-border-main rounded-lg px-4 text-sm text-content-main focus:outline-none focus:border-primary transition-colors"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="flex flex-col gap-2">
+                            <label className="text-[11px] font-bold text-content-tertiary uppercase tracking-wider">Usuário API (Basic Auth)</label>
+                            <input 
+                              type="text" 
+                              placeholder="ex: admin"
+                              value={appForm.cep_api_user || ''}
+                              onChange={(e) => setAppForm({ ...appForm, cep_api_user: e.target.value })}
+                              className="w-full h-10 bg-background-secondary border border-border-main rounded-lg px-4 text-sm text-content-main focus:outline-none focus:border-primary transition-colors"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <label className="text-[11px] font-bold text-content-tertiary uppercase tracking-wider">Senha API</label>
+                            <input 
+                              type="password" 
+                              placeholder="••••••••"
+                              value={appForm.cep_api_password || ''}
+                              onChange={(e) => setAppForm({ ...appForm, cep_api_password: e.target.value })}
+                              className="w-full h-10 bg-background-secondary border border-border-main rounded-lg px-4 text-sm text-content-main focus:outline-none focus:border-primary transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <Button 
+                            onClick={handleSaveAppConfig} 
+                            disabled={saving}
+                            className="h-10 px-10 font-bold shadow-lg shadow-primary/20"
+                          >
+                            {saving ? 'SALVANDO...' : 'SALVAR ENDPOINTS'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="p-6 bg-primary/5 border border-primary/10 rounded-2xl flex gap-3">
                       <i className="bi bi-info-circle text-primary"></i>

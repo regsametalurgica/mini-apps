@@ -1,10 +1,11 @@
+import pool from '../config/db.js';
+
 /**
  * Controller para o Controle Estatístico de Processo (CEP)
  * Responsável pela integração com o ERP para carregar e registrar dados de qualidade.
  */
 
 // Simulação de banco de dados do ERP (para fins de demonstração)
-// Em produção, isso seria substituído por chamadas ao Protheus ou outro ERP
 const mockErpData = {
   "1958": {
     op: "1958",
@@ -34,6 +35,26 @@ const mockErpData = {
 };
 
 /**
+ * Busca as configurações do aplicativo CEP no banco de dados.
+ */
+const getCepEndpoints = async () => {
+  try {
+    const { rows } = await pool.query("SELECT cep_endpoint_load, cep_endpoint_register, cep_api_user, cep_api_password FROM aplicativos WHERE rota = '/apps/cep' LIMIT 1");
+    if (rows.length > 0) {
+      return {
+        load: rows[0].cep_endpoint_load,
+        register: rows[0].cep_endpoint_register,
+        user: rows[0].cep_api_user,
+        password: rows[0].cep_api_password
+      };
+    }
+  } catch (error) {
+    console.error('Erro ao buscar configurações do CEP:', error);
+  }
+  return { load: null, register: null, user: null, password: null };
+};
+
+/**
  * Carrega os dados da carta CEP a partir de uma OP
  */
 export const loadCartaCEP = async (req, res) => {
@@ -46,7 +67,34 @@ export const loadCartaCEP = async (req, res) => {
 
     console.log(`[CEP] Carregando carta para OP: ${op} (Matrícula: ${matricula})`);
 
-    // Busca no "ERP"
+    const endpoints = await getCepEndpoints();
+
+    if (endpoints.load) {
+      console.log(`[CEP] Consultando ERP Externo via Endpoint: ${endpoints.load}`);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (endpoints.user && endpoints.password) {
+          const authBuffer = Buffer.from(`${endpoints.user}:${endpoints.password}`).toString('base64');
+          headers['Authorization'] = `Basic ${authBuffer}`;
+        }
+
+        const erpResponse = await fetch(endpoints.load, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ op, matricula })
+        });
+        const data = await erpResponse.json();
+        if (!erpResponse.ok) {
+          return res.status(erpResponse.status).json(data);
+        }
+        return res.json(data);
+      } catch (erpError) {
+        console.error('[CEP] Erro ao consultar ERP Externo:', erpError.message);
+        return res.status(502).json({ error: 'Falha ao comunicar com o ERP Externo (Load).' });
+      }
+    }
+
+    // Busca no "ERP" Mockado se endpoint não configurado
     const carta = mockErpData[op];
 
     if (!carta) {
@@ -68,13 +116,35 @@ export const registerMeasurementCEP = async (req, res) => {
   try {
     const measurementData = req.body;
     
-    // Em um cenário real, aqui enviaríamos os dados para o ERP persistir
     console.log('[CEP] Registrando medição no ERP:', measurementData);
 
-    // Simulação de sucesso e retorno do histórico atualizado
-    // (O ERP normalmente retornaria o histórico completo novamente para garantir sincronia)
+    const endpoints = await getCepEndpoints();
+
+    if (endpoints.register) {
+      console.log(`[CEP] Enviando medição ao ERP Externo via Endpoint: ${endpoints.register}`);
+      try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (endpoints.user && endpoints.password) {
+          const authBuffer = Buffer.from(`${endpoints.user}:${endpoints.password}`).toString('base64');
+          headers['Authorization'] = `Basic ${authBuffer}`;
+        }
+
+        const erpResponse = await fetch(endpoints.register, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(measurementData)
+        });
+        const data = await erpResponse.json();
+        return res.status(erpResponse.status).json(data);
+      } catch (erpError) {
+        console.error('[CEP] Erro ao enviar medição ao ERP Externo:', erpError.message);
+        return res.status(502).json({ error: 'Falha ao comunicar com o ERP Externo (Register).' });
+      }
+    }
+
+    // Simulação de sucesso se não houver endpoint configurado
     res.status(201).json({ 
-      message: 'Medição registrada com sucesso no ERP!',
+      message: 'Medição registrada com sucesso no ERP (Simulação)!',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
