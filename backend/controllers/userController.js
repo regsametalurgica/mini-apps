@@ -73,10 +73,10 @@ export const updateUser = async (req, res) => {
 
     if (password) {
       const senhaHash = await bcrypt.hash(password, 10);
-      query += ', senha_hash = $5 WHERE id = $6';
+      query += ', senha_hash = $6 WHERE id = $7';
       params.push(senhaHash, id);
     } else {
-      query += ' WHERE id = $5';
+      query += ' WHERE id = $6';
       params.push(id);
     }
 
