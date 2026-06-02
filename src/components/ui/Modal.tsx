@@ -4,9 +4,10 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }
 
-export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
+export const Modal = ({ isOpen, onClose, children, className }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -18,7 +19,7 @@ export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
       />
       
       {/* Modal Container */}
-      <div className="relative w-full max-w-md bg-background-secondary rounded-[14px] border border-border-main p-6 shadow-2xl z-10 animate-in fade-in zoom-in duration-200">
+      <div className={`relative w-full ${className || 'max-w-md'} bg-background-secondary rounded-[14px] border border-border-main p-6 shadow-2xl z-10 animate-in fade-in zoom-in duration-200`}>
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-content-tertiary hover:text-content-main transition-colors"

@@ -390,12 +390,14 @@ export const LancamentoCep = () => {
       </div>
 
       {/* GRÁFICOS CENTRAIS */}
-      <div className="flex-1 flex flex-col p-6 gap-6 overflow-hidden">
-        <div className="flex-1 bg-background-secondary border border-border-main rounded-xl p-4 min-h-0">
-          <Line options={createChartOptions('Média (Xbar)', data.limitesControle.xbar)} data={xbarData} />
-        </div>
-        <div className="flex-1 bg-background-secondary border border-border-main rounded-xl p-4 min-h-0">
-          <Line options={createChartOptions('Amplitude (Range)', data.limitesControle.range)} data={rangeData} />
+      <div className="flex-1 flex justify-start items-start pt-4 pb-8 px-8 lg:pt-6 lg:pb-12 lg:px-12 overflow-hidden">
+        <div className="w-full h-full max-w-5xl max-h-[85vh] flex flex-col gap-6">
+          <div className="flex-1 bg-background-secondary border border-border-main p-4 min-h-0">
+            <Line options={createChartOptions('Média (Xbar)', data.limitesControle.xbar)} data={xbarData} />
+          </div>
+          <div className="flex-1 bg-background-secondary border border-border-main p-4 min-h-0">
+            <Line options={createChartOptions('Amplitude (Range)', data.limitesControle.range)} data={rangeData} />
+          </div>
         </div>
       </div>
 
