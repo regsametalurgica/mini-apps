@@ -30,7 +30,7 @@ export const AppLayout = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setIsHistoryModalOpen(true)}
-            className="h-9 px-4 bg-background-main border border-border-main rounded-lg text-[13px] font-medium text-content-secondary hover:text-white hover:border-primary/50 transition-colors flex items-center gap-2"
+            className="h-9 px-4 bg-[#2D8C63] hover:bg-[#2D8C63]/90 rounded-lg text-[13px] font-bold text-white transition-colors flex items-center gap-2 shadow-sm"
           >
             <i className="bi bi-clock-history"></i>
             Histórico
@@ -102,19 +102,34 @@ export const AppLayout = () => {
         <Modal 
           isOpen={true} 
           onClose={() => setIsHistoryModalOpen(false)}
-          className="max-w-[85vw] h-[60vh] flex flex-col"
+          className="max-w-[96vw] !p-4 !pt-12"
         >
-          <div className="flex flex-col gap-6 flex-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
-                <i className="bi bi-clock-history text-primary"></i>
-                Histórico
-              </h2>
-            </div>
-            
-            <div className="flex-1 flex items-center justify-center border-2 border-dashed border-border-main rounded-xl text-content-tertiary text-[13px]">
-              Nenhum histórico disponível no momento.
-            </div>
+          <div className="w-full border border-border-main rounded-lg overflow-x-auto custom-scrollbar">
+            <table className="w-full text-[11px] md:text-[12px] text-content-main bg-background-main border-collapse min-w-max">
+              <tbody>
+                {['Data', 'OP', 'Operador', 'Hora', '1', '2', '3', '4', '5', 'Média', 'Amplitude'].map((label, rowIndex) => (
+                  <tr key={rowIndex} className="border-b border-border-main hover:bg-[#1A1A1A] transition-colors h-7 lg:h-8">
+                    <td className="px-2 border-r border-border-main font-semibold bg-background-secondary w-[85px] sticky left-0 z-10 text-content-secondary truncate text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                      {label}
+                    </td>
+                    {Array.from({ length: 25 }, (_, i) => i + 1).map((col) => (
+                      <td key={col} className="border-r border-border-main text-center last:border-r-0 min-w-[70px]">
+                        {/* Futuramente dados aqui */}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {/* Linha dos índices embaixo */}
+                <tr className="bg-background-secondary h-7 lg:h-8">
+                  <td className="px-2 border-r border-border-main bg-background-secondary w-[85px] sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]"></td>
+                  {Array.from({ length: 25 }, (_, i) => i + 1).map((col) => (
+                    <td key={col} className="border-r border-border-main text-center font-bold text-content-tertiary text-[10px] md:text-[11px] last:border-r-0 min-w-[70px]">
+                      {col}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           </div>
         </Modal>
       )}

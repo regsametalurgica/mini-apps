@@ -44,7 +44,7 @@ export const LancamentoCep = () => {
   // Form State
   const [vValues, setVValues] = useState({ v1: '', v2: '', v3: '', v4: '', v5: '' });
   const [observacao, setObservacao] = useState('');
-  
+
   // Data e Hora editáveis
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
@@ -65,9 +65,9 @@ export const LancamentoCep = () => {
     const media = values.reduce((a, b) => a + b, 0) / values.length;
     const range = Math.max(...values) - Math.min(...values);
 
-    return { 
-      media: parseFloat(media.toFixed(3)), 
-      range: parseFloat(range.toFixed(3)) 
+    return {
+      media: parseFloat(media.toFixed(3)),
+      range: parseFloat(range.toFixed(3))
     };
   }, [vValues]);
 
@@ -96,7 +96,7 @@ export const LancamentoCep = () => {
       e.preventDefault();
       const fields = ['v1', 'v2', 'v3', 'v4', 'v5'];
       const currentIndex = fields.indexOf(field);
-      
+
       if (currentIndex < fields.length - 1) {
         const nextField = document.querySelector(`input[name="${fields[currentIndex + 1]}"]`) as HTMLInputElement;
         nextField?.focus();
@@ -150,8 +150,8 @@ export const LancamentoCep = () => {
           </div>
 
           <div className="space-y-4">
-            <Input 
-              label="Número da Ordem de Produção (OP)" 
+            <Input
+              label="Número da Ordem de Produção (OP)"
               placeholder="Ex: 1958"
               value={opInput}
               onChange={(e) => setOpInput(e.target.value)}
@@ -159,7 +159,7 @@ export const LancamentoCep = () => {
               autoFocus
               icon="bi-hash"
             />
-            
+
             {error && (
               <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
                 <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
@@ -199,7 +199,8 @@ export const LancamentoCep = () => {
         text: title,
         color: '#E1E1E1',
         align: 'start' as const,
-        font: { size: 16, weight: 'bold' as const }
+        font: { size: 12, weight: 'bold' as const },
+        padding: { top: 0, bottom: 6 }
       },
       annotation: {
         annotations: {
@@ -256,10 +257,10 @@ export const LancamentoCep = () => {
       pointRadius: 4,
       pointHoverRadius: 6,
       tension: 0.1,
-      pointBackgroundColor: data.historico.xbar.map(val => 
+      pointBackgroundColor: data.historico.xbar.map(val =>
         (val > data.limitesControle.xbar.lsc || val < data.limitesControle.xbar.lic) ? '#EF4444' : '#3B82F6'
       ),
-      pointBorderColor: data.historico.xbar.map(val => 
+      pointBorderColor: data.historico.xbar.map(val =>
         (val > data.limitesControle.xbar.lsc || val < data.limitesControle.xbar.lic) ? '#EF4444' : '#3B82F6'
       )
     }]
@@ -276,10 +277,10 @@ export const LancamentoCep = () => {
       pointRadius: 4,
       pointHoverRadius: 6,
       tension: 0.1,
-      pointBackgroundColor: data.historico.range.map(val => 
+      pointBackgroundColor: data.historico.range.map(val =>
         (val > data.limitesControle.range.lsc || val < data.limitesControle.range.lic) ? '#EF4444' : '#10B981'
       ),
-      pointBorderColor: data.historico.range.map(val => 
+      pointBorderColor: data.historico.range.map(val =>
         (val > data.limitesControle.range.lsc || val < data.limitesControle.range.lic) ? '#EF4444' : '#10B981'
       )
     }]
@@ -311,26 +312,26 @@ export const LancamentoCep = () => {
 
         {/* Info Editável */}
         <div className="grid grid-cols-2 gap-4">
-          <Input 
-            label="Data" 
+          <Input
+            label="Data"
             type="date"
-            value={selectedDate} 
+            value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="flex-1"
           />
-          <Input 
-            label="Hora" 
+          <Input
+            label="Hora"
             type="time"
-            value={selectedTime} 
+            value={selectedTime}
             onChange={(e) => setSelectedTime(e.target.value)}
             className="flex-1"
           />
         </div>
-        
-        <Input 
-          label="Operador" 
-          value={user?.nome || 'Não Logado'} 
-          readOnly 
+
+        <Input
+          label="Operador"
+          value={user?.nome || 'Não Logado'}
+          readOnly
           className="opacity-70"
           icon="bi-person"
         />
@@ -358,17 +359,15 @@ export const LancamentoCep = () => {
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-content-tertiary">Média (Xbar)</label>
-            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${
-              isXbarOut ? 'text-status-error' : 'text-primary'
-            }`}>
+            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isXbarOut ? 'text-status-error' : 'text-primary'
+              }`}>
               {stats.media}
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-content-tertiary">Amplitude (Range)</label>
-            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${
-              isRangeOut ? 'text-status-error' : 'text-primary'
-            }`}>
+            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isRangeOut ? 'text-status-error' : 'text-primary'
+              }`}>
               {stats.range}
             </div>
           </div>
@@ -390,30 +389,28 @@ export const LancamentoCep = () => {
       </div>
 
       {/* GRÁFICOS CENTRAIS */}
-      <div className="flex-1 flex justify-start items-start pt-4 pb-8 px-8 lg:pt-6 lg:pb-12 lg:px-12 overflow-hidden">
+      <div className="flex-1 flex justify-start items-start pt-4 pb-8 pl-4 pr-8 lg:pt-6 lg:pb-12 lg:pl-6 lg:pr-12 overflow-hidden">
         <div className="w-full h-full max-w-5xl max-h-[85vh] flex flex-col gap-6">
-          <div className="flex-1 bg-background-secondary border border-border-main p-4 min-h-0">
+          <div className="flex-1 bg-background-secondary border border-border-main rounded-lg p-4 min-h-0 shadow-sm">
             <Line options={createChartOptions('Média (Xbar)', data.limitesControle.xbar)} data={xbarData} />
           </div>
-          <div className="flex-1 bg-background-secondary border border-border-main p-4 min-h-0">
+          <div className="flex-1 bg-background-secondary border border-border-main rounded-lg p-4 min-h-0 shadow-sm">
             <Line options={createChartOptions('Amplitude (Range)', data.limitesControle.range)} data={rangeData} />
           </div>
         </div>
       </div>
 
       {/* MENU DIREITO COLAPSÁVEL — Dados da Carta */}
-      <div 
-        className={`bg-background-secondary border-l border-border-main transition-all duration-300 ease-in-out shrink-0 overflow-hidden flex flex-col ${
-          isRightSidebarOpen ? 'w-[280px]' : 'w-[48px]'
-        }`}
+      <div
+        className={`bg-background-secondary border-l border-border-main transition-all duration-300 ease-in-out shrink-0 overflow-hidden flex flex-col ${isRightSidebarOpen ? 'w-[280px]' : 'w-[48px]'
+          }`}
       >
         {/* Toggle Button Strip */}
         <div className="h-14 flex items-center justify-center border-b border-border-main shrink-0">
-          <button 
+          <button
             onClick={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-              isRightSidebarOpen ? 'bg-primary/10 text-primary' : 'text-content-tertiary hover:text-content-main'
-            }`}
+            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isRightSidebarOpen ? 'bg-primary/10 text-primary' : 'text-content-tertiary hover:text-content-main'
+              }`}
             title={isRightSidebarOpen ? "Recolher informações" : "Ver informações da carta"}
           >
             <i className={`bi ${isRightSidebarOpen ? 'bi-chevron-right' : 'bi-info-circle'} text-[18px]`}></i>
@@ -421,13 +418,12 @@ export const LancamentoCep = () => {
         </div>
 
         {/* Content - Only visible when open */}
-        <div className={`p-6 flex flex-col gap-6 overflow-y-auto transition-opacity duration-200 ${
-          isRightSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
+        <div className={`p-6 flex flex-col gap-6 overflow-y-auto transition-opacity duration-200 ${isRightSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}>
           <h3 className="text-[12px] font-bold text-content-tertiary uppercase tracking-widest border-b border-border-main pb-3 whitespace-nowrap">
             Dados da Carta
           </h3>
-          
+
           <div className="flex flex-col gap-5">
             {[
               { label: 'Ordem de Produção', value: data.op },
