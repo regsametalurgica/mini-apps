@@ -159,7 +159,7 @@ export const Users = () => {
 
       {/* Table List */}
       <div className="flex-1 bg-background-secondary border border-border-main rounded-xl overflow-hidden flex flex-col">
-        <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main bg-[#161616] text-[12px] font-semibold text-content-tertiary uppercase tracking-wider">
+        <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main bg-background-tertiary text-[12px] font-semibold text-content-tertiary uppercase tracking-wider">
           <div className="col-span-3">Nome</div>
           <div className="col-span-3">Usuário</div>
           <div className="col-span-2">Matrícula</div>
@@ -176,7 +176,7 @@ export const Users = () => {
             </div>
           ) : (
             filteredUsers.map(user => (
-              <div key={user.id} className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main items-center hover:bg-[#1A1A1A] transition-colors">
+              <div key={user.id} className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-border-main items-center hover:bg-background-main transition-colors">
                 <div className="col-span-3 text-[14px] text-content-main font-medium truncate flex items-center gap-2">
                   {user.nome}
                   {user.role === 'admin' && (
@@ -203,7 +203,7 @@ export const Users = () => {
                 <div className="col-span-2 flex justify-end gap-2">
                   <button 
                     onClick={() => openEditModal(user)}
-                    className="w-8 h-8 rounded-md bg-background-card border border-border-main flex items-center justify-center text-content-secondary hover:text-white hover:border-border-subtle transition-all"
+                    className="w-8 h-8 rounded-md bg-background-card border border-border-main flex items-center justify-center text-content-secondary hover:text-content-main hover:border-border-subtle transition-all"
                   >
                     <i className="bi bi-pencil"></i>
                   </button>
@@ -223,7 +223,7 @@ export const Users = () => {
 
       {/* Form Modal (Create/Edit) */}
       <Modal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)}>
-        <h3 className="text-[18px] font-semibold text-white mb-6">
+        <h3 className="text-[18px] font-semibold text-content-main mb-6">
           {editingUser ? 'Editar Usuário' : 'Novo Usuário'}
         </h3>
         <form onSubmit={handleSave} className="flex flex-col gap-4">
@@ -292,7 +292,7 @@ export const Users = () => {
             <Button 
               type="button" 
               onClick={() => setIsFormModalOpen(false)}
-              className="flex-1 !bg-background-card hover:!bg-[#2A2A2A] !text-white border border-border-main"
+              className="flex-1 !bg-background-card hover:!bg-background-tertiary !text-content-main border border-border-main"
             >
               Cancelar
             </Button>
@@ -309,7 +309,7 @@ export const Users = () => {
           <div className="w-16 h-16 rounded-full bg-status-error/10 flex items-center justify-center mb-4">
             <i className="bi bi-exclamation-triangle text-[32px] text-status-error"></i>
           </div>
-          <h3 className="text-[18px] font-semibold text-white mb-2">Excluir Usuário</h3>
+          <h3 className="text-[18px] font-semibold text-content-main mb-2">Excluir Usuário</h3>
           <p className="text-[14px] text-content-secondary mb-8">
             Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.
           </p>
@@ -317,14 +317,14 @@ export const Users = () => {
             <Button 
               type="button" 
               onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 !bg-background-card hover:!bg-[#2A2A2A] !text-white border border-border-main"
+              className="flex-1 !bg-background-card hover:!bg-background-tertiary !text-content-main border border-border-main"
             >
               Cancelar
             </Button>
             <Button 
               type="button" 
               onClick={handleDelete}
-              className="flex-1 !bg-status-error hover:!bg-red-600 !text-white"
+              className="flex-1 !bg-status-error hover:!bg-red-600 !text-content-main"
             >
               Excluir
             </Button>

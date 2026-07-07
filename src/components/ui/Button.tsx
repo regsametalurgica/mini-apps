@@ -14,14 +14,14 @@ export const Button: React.FC<ButtonProps> = ({
   isLoading,
   ...props 
 }) => {
-  const baseStyles = 'h-[38px] rounded-[999px] font-medium text-[13px] px-6 transition-all duration-200 ease-in-out flex items-center justify-center';
+  const baseStyles = 'h-[38px] rounded-md font-medium text-[13px] px-6 transition-all duration-200 ease-in-out flex items-center justify-center';
   
   const variants = {
     primary: `bg-primary text-white hover:bg-primary-hover active:bg-primary-active border-none`,
-    secondary: `bg-transparent text-white border border-border-main hover:bg-background-tertiary`,
+    secondary: `bg-transparent text-content-main border border-border-main hover:bg-background-tertiary`,
   };
 
-  const disabledStyles = 'bg-[#1F1F1F] text-content-disabled cursor-not-allowed hover:bg-[#1F1F1F] active:bg-[#1F1F1F]';
+  const disabledStyles = 'bg-background-tertiary text-content-disabled cursor-not-allowed hover:bg-background-tertiary active:bg-background-tertiary';
 
   const appliedStyles = (disabled || isLoading)
     ? `${baseStyles} ${disabledStyles} ${className}` 

@@ -29,7 +29,7 @@ export const ToastContainer = () => {
           </div>
 
           <div className="flex-1 pt-1">
-            <h4 className="font-bold text-sm leading-none mb-1 text-white">{toast.message}</h4>
+            <h4 className="font-bold text-sm leading-none mb-1 text-content-main">{toast.message}</h4>
             {toast.description && (
               <p className="text-[12px] opacity-70 leading-relaxed font-medium">
                 {toast.description}

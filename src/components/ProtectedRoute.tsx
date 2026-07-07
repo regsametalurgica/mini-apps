@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ adminOnly = false }: ProtectedRouteProps) => {
 
   if (adminOnly && user?.role !== 'admin') {
     // Redireciona para o dashboard se tentar acessar admin sem ser admin
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

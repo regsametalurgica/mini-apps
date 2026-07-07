@@ -31,7 +31,7 @@ ChartJS.register(
 
 export const LancamentoCep = () => {
   const { data, isLoading, error, loadCarta, registerMeasurement, reset } = useCepStore();
-  const user = useAuthStore((state) => state.user);
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
   // Sidebar State
@@ -87,7 +87,8 @@ export const LancamentoCep = () => {
 
   const handleCancel = () => {
     reset();
-    navigate('/dashboard');
+    logout();
+    navigate('/login');
   };
 
   // Lógica de navegação com Enter
@@ -113,6 +114,9 @@ export const LancamentoCep = () => {
       return;
     }
 
+    // Monta a dataHora unindo data e hora informados na tela
+    const dataHora = `${selectedDate}T${selectedTime}:00`;
+
     try {
       await registerMeasurement({
         v1: values[0],
@@ -122,7 +126,8 @@ export const LancamentoCep = () => {
         v5: values[4],
         media: stats.media,
         range: stats.range,
-        observacao
+        observacao,
+        dataHora
       });
 
       // Limpar formulário e focar no primeiro campo
@@ -169,10 +174,10 @@ export const LancamentoCep = () => {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button variant="secondary" onClick={handleCancel} className="flex-1">
-              CANCELAR
+            <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
+              CANCELAR E SAIR
             </Button>
-            <Button onClick={handleStart} isLoading={isLoading} className="flex-[2]">
+            <Button onClick={handleStart} isLoading={isLoading} className="flex-1 whitespace-nowrap !px-2">
               INICIAR PROCESSO
             </Button>
           </div>
@@ -186,65 +191,77 @@ export const LancamentoCep = () => {
   const isRangeOut = stats.range > data.limitesControle.range.lsc || stats.range < data.limitesControle.range.lic;
 
   // Configuração dos Gráficos
-  const createChartOptions = (title: string, limits: { lsc: number; media: number; lic: number }) => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: { color: '#888', font: { size: 10 } }
-      },
-      title: {
-        display: true,
-        text: title,
-        color: '#E1E1E1',
-        align: 'start' as const,
-        font: { size: 12, weight: 'bold' as const },
-        padding: { top: 0, bottom: 6 }
-      },
-      annotation: {
-        annotations: {
-          lsc: {
-            type: 'line' as const,
-            yMin: limits.lsc,
-            yMax: limits.lsc,
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            borderWidth: 1.5,
-            borderDash: [5, 5],
-            label: { display: true, content: `LSC (${limits.lsc})`, position: 'end' as const, backgroundColor: 'rgba(0,0,0,0.5)', font: { size: 9 } }
-          },
-          media: {
-            type: 'line' as const,
-            yMin: limits.media,
-            yMax: limits.media,
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-            borderWidth: 1.5,
-            borderDash: [2, 2],
-            label: { display: true, content: `Média (${limits.media})`, position: 'end' as const, backgroundColor: 'rgba(0,0,0,0.5)', font: { size: 9 } }
-          },
-          lic: {
-            type: 'line' as const,
-            yMin: limits.lic,
-            yMax: limits.lic,
-            borderColor: 'rgba(239, 68, 68, 0.8)',
-            borderWidth: 1.5,
-            borderDash: [5, 5],
-            label: { display: true, content: `LIC (${limits.lic})`, position: 'end' as const, backgroundColor: 'rgba(0,0,0,0.5)', font: { size: 9 } }
+  const createChartOptions = (title: string, limits: { lsc: number; media: number; lic: number }, chartData: number[]) => {
+    // Calcula o min/max considerando os limites de controle E os dados plotados
+    const allValues = [...chartData.filter(v => !isNaN(v)), limits.lsc, limits.media, limits.lic];
+    const dataMin = Math.min(...allValues);
+    const dataMax = Math.max(...allValues);
+    const range = dataMax - dataMin;
+    // Padding de 15% acima e abaixo para dar respiro visual
+    const padding = Math.max(range * 0.15, 0.01);
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top' as const,
+          labels: { color: '#4A5568', font: { size: 10 } }
+        },
+        title: {
+          display: true,
+          text: title,
+          color: '#1D2630',
+          align: 'start' as const,
+          font: { size: 12, weight: 'bold' as const },
+          padding: { top: 0, bottom: 6 }
+        },
+        annotation: {
+          annotations: {
+            lsc: {
+              type: 'line' as const,
+              yMin: limits.lsc,
+              yMax: limits.lsc,
+              borderColor: 'rgba(239, 68, 68, 0.8)',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              label: { display: true, content: `LSC (${limits.lsc})`, position: 'end' as const, backgroundColor: 'rgba(255,255,255,0.9)', color: '#EF4444', font: { size: 9 } }
+            },
+            media: {
+              type: 'line' as const,
+              yMin: limits.media,
+              yMax: limits.media,
+              borderColor: 'rgba(0, 0, 0, 0.2)',
+              borderWidth: 1.5,
+              borderDash: [2, 2],
+              label: { display: true, content: `Média (${limits.media})`, position: 'end' as const, backgroundColor: 'rgba(255,255,255,0.9)', color: '#1D2630', font: { size: 9 } }
+            },
+            lic: {
+              type: 'line' as const,
+              yMin: limits.lic,
+              yMax: limits.lic,
+              borderColor: 'rgba(239, 68, 68, 0.8)',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              label: { display: true, content: `LIC (${limits.lic})`, position: 'end' as const, backgroundColor: 'rgba(255,255,255,0.9)', color: '#EF4444', font: { size: 9 } }
+            }
           }
         }
-      }
-    },
-    scales: {
-      y: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: '#666', font: { size: 10 } }
       },
-      x: {
-        grid: { display: false },
-        ticks: { color: '#666', font: { size: 10 } }
+      scales: {
+        y: {
+          min: parseFloat((dataMin - padding).toFixed(4)),
+          max: parseFloat((dataMax + padding).toFixed(4)),
+          grid: { color: 'rgba(0, 0, 0, 0.05)' },
+          ticks: { color: '#4A5568', font: { size: 10 } }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#4A5568', font: { size: 10 } }
+        }
       }
-    }
-  });
+    };
+  };
 
   const xbarData = {
     labels: data.historico.labels,
@@ -287,7 +304,7 @@ export const LancamentoCep = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#0F0F0F] text-content-main overflow-hidden relative">
+    <div className="flex h-full bg-background-main text-content-main overflow-hidden relative">
       {/* MENU ESQUERDO — Área Operacional */}
       <div className="w-[380px] bg-background-secondary border-r border-border-main p-6 flex flex-col gap-6 shrink-0 overflow-y-auto">
         {/* Resumo Topo */}
@@ -359,14 +376,14 @@ export const LancamentoCep = () => {
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-content-tertiary">Média (Xbar)</label>
-            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isXbarOut ? 'text-status-error' : 'text-primary'
+            <div className={`h-10 bg-background-card border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isXbarOut ? 'text-status-error' : 'text-primary'
               }`}>
               {stats.media}
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-content-tertiary">Amplitude (Range)</label>
-            <div className={`h-10 bg-[#161616] border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isRangeOut ? 'text-status-error' : 'text-primary'
+            <div className={`h-10 bg-background-card border border-border-main rounded-lg flex items-center px-4 font-mono font-bold transition-colors ${isRangeOut ? 'text-status-error' : 'text-primary'
               }`}>
               {stats.range}
             </div>
@@ -392,10 +409,10 @@ export const LancamentoCep = () => {
       <div className="flex-1 flex justify-start items-start pt-4 pb-8 pl-4 pr-8 lg:pt-6 lg:pb-12 lg:pl-6 lg:pr-12 overflow-hidden">
         <div className="w-full h-full max-w-5xl max-h-[85vh] flex flex-col gap-6">
           <div className="flex-1 bg-background-secondary border border-border-main rounded-lg p-4 min-h-0 shadow-sm">
-            <Line options={createChartOptions('Média (Xbar)', data.limitesControle.xbar)} data={xbarData} />
+            <Line options={createChartOptions('Média (Xbar)', data.limitesControle.xbar, data.historico.xbar)} data={xbarData} />
           </div>
           <div className="flex-1 bg-background-secondary border border-border-main rounded-lg p-4 min-h-0 shadow-sm">
-            <Line options={createChartOptions('Amplitude (Range)', data.limitesControle.range)} data={rangeData} />
+            <Line options={createChartOptions('Amplitude (Range)', data.limitesControle.range, data.historico.range)} data={rangeData} />
           </div>
         </div>
       </div>

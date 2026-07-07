@@ -19,7 +19,7 @@ export const Login = () => {
       if (user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/dashboard');
+        navigate('/');
       }
     }
   }, [token, user, navigate]);
@@ -52,7 +52,7 @@ export const Login = () => {
       if (data.user.role === 'admin') {
         navigate('/admin');
       } else {
-        navigate('/dashboard');
+        navigate('/');
       }
     } catch (err: any) {
       setError(err.message);
@@ -62,66 +62,80 @@ export const Login = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background-main text-content-main">
-      {/* Sidebar de Login */}
-      <div className="relative w-[500px] bg-background-secondary border-r border-border-main p-8 flex flex-col justify-center items-center shrink-0">
-        <h1 className="absolute top-12 left-12 text-[28px] font-semibold leading-[1.2]">
-          Welcome
-        </h1>
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-[#F4F5F7] text-content-main p-6">
+      <div className="w-full max-w-[360px] flex flex-col items-center">
+        
+        {/* Simulação do Logo TOTVS */}
+        <div className="flex items-center gap-2 mb-6">
+          <i className="bi bi-layers-half text-[32px] text-[#4A4A4A]"></i>
+          <span className="text-[28px] font-bold text-[#4A4A4A] tracking-tight">REGSA</span>
+        </div>
 
-        <div className="w-full max-w-[320px]">
-          <form onSubmit={handleLogin} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[12px] p-3 rounded-md mb-2">
-                  {error}
-                </div>
-              )}
-              
-              <Input 
-                label="Usuário" 
+        <h1 className="text-[26px] font-light text-[#4A4A4A] mb-4">
+          Integração Protheus ERP
+        </h1>
+        
+        <h2 className="text-[18px] text-primary mb-8 font-medium">
+          Controle Estatístico CEP
+        </h2>
+
+        <form onSubmit={handleLogin} className="flex flex-col gap-5 w-full">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-500 text-[12px] p-3 rounded-md text-center font-medium">
+              {error}
+            </div>
+          )}
+          
+          <div className="flex flex-col gap-1">
+            <label className="text-[13px] font-bold text-[#333]">Insira seu usuário</label>
+            <div className="relative">
+              <i className="bi bi-person absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-primary"></i>
+              <input 
                 type="text" 
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
-                placeholder="admin ou usuario"
-                icon="bi-person"
+                placeholder="Ex. admin"
+                className="w-full h-[42px] pl-10 pr-4 bg-white border border-[#D1D5DB] rounded-md text-[14px] text-content-main focus:outline-none focus:border-primary transition-colors"
                 required
               />
-              <Input 
-                label="Senha" 
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-[13px] font-bold text-[#333]">Insira sua senha</label>
+            <div className="relative">
+              <i className="bi bi-unlock absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-primary"></i>
+              <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="**********"
-                icon="bi-key"
+                className="w-full h-[42px] pl-10 pr-4 bg-white border border-[#D1D5DB] rounded-md text-[14px] text-content-main focus:outline-none focus:border-primary transition-colors"
                 required
               />
             </div>
+          </div>
 
-            <div className="flex flex-col gap-4 mt-2">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Acessando...' : 'Acessar'}
-              </Button>
-              
-              <a 
-                href="#" 
-                className="text-center text-[11px] text-content-tertiary hover:text-content-secondary transition-colors"
-              >
-                Esqueci a minha senha
-              </a>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      {/* Main Area - Apresentação */}
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background-main">
-        <h2 className="text-[28px] font-semibold text-content-main mb-2">
-          Portal de Mini Apps
-        </h2>
-        <p className="text-[14px] text-content-secondary">
-          Desenvolvido pela equipe de TI - Regsa Metalúrgica
-        </p>
+          <button 
+            type="submit" 
+            disabled={isLoading}
+            className={`w-full h-[42px] rounded-md font-bold text-[14px] transition-colors mt-2 ${
+              usuario && password 
+                ? 'bg-primary text-white hover:bg-primary/90' 
+                : 'bg-[#B0B0B0] text-white cursor-not-allowed'
+            }`}
+          >
+            {isLoading ? 'Entrando...' : 'Entrar'}
+          </button>
+          
+          <div className="text-center mt-4">
+            <a 
+              href="#" 
+              className="text-[13px] font-semibold text-primary hover:text-primary/80 transition-colors"
+            >
+              Esqueceu sua senha?
+            </a>
+          </div>
+        </form>
       </div>
     </div>
   );

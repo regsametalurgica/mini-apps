@@ -25,9 +25,9 @@ export const Input: React.FC<InputProps> = ({ label, icon, className = '', id, .
             h-[38px] w-full rounded-lg bg-background-secondary 
             border border-border-input text-[14px] text-content-main
             transition-all duration-200 ease-in-out
-            placeholder:text-[rgba(255,255,255,0.28)]
-            focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-[rgba(45,140,99,0.15)]
-            hover:border-[rgba(255,255,255,0.10)]
+            placeholder:text-content-tertiary
+            focus:outline-none focus:border-primary focus:ring-[3px] focus:ring-primary/20
+            hover:border-border-main
             ${icon ? 'pl-[40px] pr-[14px]' : 'px-[14px]'}
           `}
           {...props}

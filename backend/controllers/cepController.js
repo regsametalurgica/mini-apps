@@ -27,8 +27,13 @@ const mockErpData = {
       range: { lsc: 0.45, media: 0.30, lic: 0.15 }
     },
     historico: {
+      xcol: [],
       xbar: [18.40, 18.37, 18.50, 18.32, 18.45, 18.51, 18.36, 18.36, 18.50, 18.39, 18.40, 18.39, 18.36, 18.33, 18.46, 18.51, 18.46, 18.47, 18.44, 18.43, 18.36, 18.39, 18.38, 18.47, 18.50],
       range: [0.30, 0.32, 0.39, 0.22, 0.27, 0.24, 0.21, 0.28, 0.24, 0.22, 0.23, 0.28, 0.38, 0.22, 0.29, 0.22, 0.35, 0.33, 0.26, 0.28, 0.22, 0.21, 0.24, 0.33, 0.36],
+      xop: [],
+      xdata: [],
+      xhora: [],
+      xmatricula: [],
       labels: Array.from({ length: 25 }, (_, i) => (i + 1).toString())
     }
   }
@@ -90,6 +95,11 @@ export const loadCartaCEP = async (req, res) => {
         return res.json(data);
       } catch (erpError) {
         console.error('[CEP] Erro ao consultar ERP Externo:', erpError.message);
+        console.log('[CEP] Fallback: Utilizando Mock Data para a OP:', op);
+        const carta = mockErpData[op];
+        if (carta) {
+          return res.json(carta);
+        }
         return res.status(502).json({ error: 'Falha ao comunicar com o ERP Externo (Load).' });
       }
     }
@@ -115,7 +125,7 @@ export const loadCartaCEP = async (req, res) => {
 export const registerMeasurementCEP = async (req, res) => {
   try {
     const measurementData = req.body;
-    
+
     console.log('[CEP] Registrando medição no ERP:', measurementData);
 
     const endpoints = await getCepEndpoints();
@@ -138,12 +148,20 @@ export const registerMeasurementCEP = async (req, res) => {
         return res.status(erpResponse.status).json(data);
       } catch (erpError) {
         console.error('[CEP] Erro ao enviar medição ao ERP Externo:', erpError.message);
+        console.log('[CEP] Fallback: Registrando localmente no Mock Data para a OP:', measurementData.op);
+        const { op, historico } = measurementData;
+        if (op && mockErpData[op]) {
+          if (historico) {
+            mockErpData[op].historico = historico;
+          }
+          return res.status(200).json(mockErpData[op]);
+        }
         return res.status(502).json({ error: 'Falha ao comunicar com o ERP Externo (Register).' });
       }
     }
 
     // Simulação de sucesso se não houver endpoint configurado
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Medição registrada com sucesso no ERP (Simulação)!',
       timestamp: new Date().toISOString()
     });

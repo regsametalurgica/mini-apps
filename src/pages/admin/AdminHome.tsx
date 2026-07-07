@@ -9,7 +9,7 @@ export const AdminHome = () => {
         <span className="text-[13px] text-content-tertiary font-medium mb-2 block">
           Usuários Ativos
         </span>
-        <span className="text-[36px] font-bold text-white">
+        <span className="text-[36px] font-bold text-content-main">
           {activeUsersCount}
         </span>
       </div>

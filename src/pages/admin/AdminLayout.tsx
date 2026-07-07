@@ -19,7 +19,6 @@ export const AdminLayout = () => {
   const navItems = [
     { path: '/admin', icon: 'bi-house-door', label: 'Início', exact: true },
     { path: '/admin/usuarios', icon: 'bi-people', label: 'Usuários' },
-    { path: '/admin/aplicacoes', icon: 'bi-shield-lock', label: 'Permissões' },
     { path: '/admin/configuracoes', icon: 'bi-gear', label: 'Configurações' },
   ];
 
@@ -31,7 +30,7 @@ export const AdminLayout = () => {
         <div className="h-[64px] flex items-center px-5 shrink-0 border-b border-border-main">
           {/* Opcional: Logo ou marcação */}
           <i className="bi bi-shield-lock text-[18px] text-primary"></i>
-          <span className="ml-4 font-semibold text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <span className="ml-4 font-semibold text-content-main whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             Admin
           </span>
         </div>
@@ -69,7 +68,7 @@ export const AdminLayout = () => {
           <div className="relative">
             <button 
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="w-10 h-10 rounded-full bg-background-main border border-border-main flex items-center justify-center hover:bg-[#1F1F1F] transition-colors"
+              className="w-10 h-10 rounded-full bg-background-main border border-border-main flex items-center justify-center hover:bg-background-tertiary transition-colors"
             >
               <i className="bi bi-person-fill text-[20px] text-content-main"></i>
             </button>
@@ -83,7 +82,7 @@ export const AdminLayout = () => {
                 <div className="absolute top-12 right-0 w-48 bg-background-secondary border border-border-main rounded-lg shadow-xl z-50 overflow-hidden flex flex-col py-1">
                   <button 
                     onClick={() => setIsProfileMenuOpen(false)}
-                    className="w-full text-left px-4 py-2.5 text-[13px] text-content-main hover:bg-[#1F1F1F] transition-colors flex items-center gap-2"
+                    className="w-full text-left px-4 py-2.5 text-[13px] text-content-main hover:bg-background-tertiary transition-colors flex items-center gap-2"
                   >
                     <i className="bi bi-gear"></i>
                     Configurações
