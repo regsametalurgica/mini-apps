@@ -40,23 +40,16 @@ const mockErpData = {
 };
 
 /**
- * Busca as configurações do aplicativo CEP no banco de dados.
+ * Obtém as configurações do ERP Protheus a partir das variáveis de ambiente (.env).
+ * Não consulta mais o banco de dados — tudo vem do arquivo .env na raiz do projeto.
  */
-const getCepEndpoints = async () => {
-  try {
-    const { rows } = await pool.query("SELECT cep_endpoint_load, cep_endpoint_register, cep_api_user, cep_api_password FROM aplicativos WHERE rota = '/apps/cep' LIMIT 1");
-    if (rows.length > 0) {
-      return {
-        load: rows[0].cep_endpoint_load,
-        register: rows[0].cep_endpoint_register,
-        user: rows[0].cep_api_user,
-        password: rows[0].cep_api_password
-      };
-    }
-  } catch (error) {
-    console.error('Erro ao buscar configurações do CEP:', error);
-  }
-  return { load: null, register: null, user: null, password: null };
+const getProtheusConfig = () => {
+  return {
+    load: process.env.PROTHEUS_ENDPOINT_CEP_LOAD || null,
+    register: process.env.PROTHEUS_ENDPOINT_CEP_REGISTER || null,
+    user: process.env.PROTHEUS_API_USER || null,
+    password: process.env.PROTHEUS_API_PASSWORD || null
+  };
 };
 
 /**
@@ -72,18 +65,26 @@ export const loadCartaCEP = async (req, res) => {
 
     console.log(`[CEP] Carregando carta para OP: ${op} (Matrícula: ${matricula})`);
 
-    const endpoints = await getCepEndpoints();
+    const config = getProtheusConfig();
 
-    if (endpoints.load) {
-      console.log(`[CEP] Consultando ERP Externo via Endpoint: ${endpoints.load}`);
+    // Log de diagnóstico das variáveis carregadas
+    console.log(`[CEP] Config ERP carregada do .env:`, {
+      load: config.load,
+      register: config.register,
+      user: config.user,
+      passwordPresente: !!config.password
+    });
+
+    if (config.load) {
+      console.log(`[CEP] Consultando ERP Externo via Endpoint: ${config.load}`);
       try {
         const headers = { 'Content-Type': 'application/json' };
-        if (endpoints.user && endpoints.password) {
-          const authBuffer = Buffer.from(`${endpoints.user}:${endpoints.password}`).toString('base64');
+        if (config.user && config.password) {
+          const authBuffer = Buffer.from(`${config.user}:${config.password}`).toString('base64');
           headers['Authorization'] = `Basic ${authBuffer}`;
         }
 
-        const erpResponse = await fetch(endpoints.load, {
+        const erpResponse = await fetch(config.load, {
           method: 'POST',
           headers,
           body: JSON.stringify({ op, matricula })
@@ -95,6 +96,7 @@ export const loadCartaCEP = async (req, res) => {
         return res.json(data);
       } catch (erpError) {
         console.error('[CEP] Erro ao consultar ERP Externo:', erpError.message);
+        console.error('[CEP] Detalhes do erro:', { cause: erpError.cause, code: erpError.code, name: erpError.name });
         console.log('[CEP] Fallback: Utilizando Mock Data para a OP:', op);
         const carta = mockErpData[op];
         if (carta) {
@@ -126,28 +128,73 @@ export const registerMeasurementCEP = async (req, res) => {
   try {
     const measurementData = req.body;
 
-    console.log('[CEP] Registrando medição no ERP:', measurementData);
+    console.log('[CEP] === REGISTRANDO MEDIÇÃO NO ERP ===');
+    console.log('[CEP] Payload recebido do frontend:', JSON.stringify(measurementData, null, 2));
 
-    const endpoints = await getCepEndpoints();
+    const config = getProtheusConfig();
 
-    if (endpoints.register) {
-      console.log(`[CEP] Enviando medição ao ERP Externo via Endpoint: ${endpoints.register}`);
+    console.log('[CEP] Config ERP para registro:', {
+      register: config.register,
+      user: config.user,
+      passwordPresente: !!config.password
+    });
+
+    if (config.register) {
+      console.log(`[CEP] Enviando POST para ERP: ${config.register}`);
       try {
         const headers = { 'Content-Type': 'application/json' };
-        if (endpoints.user && endpoints.password) {
-          const authBuffer = Buffer.from(`${endpoints.user}:${endpoints.password}`).toString('base64');
+        if (config.user && config.password) {
+          const authBuffer = Buffer.from(`${config.user}:${config.password}`).toString('base64');
           headers['Authorization'] = `Basic ${authBuffer}`;
         }
 
-        const erpResponse = await fetch(endpoints.register, {
-          method: 'POST',
+        // Reconstrói o JSON garantindo a ordem das chaves solicitada pelo ERP
+        const {
+          op,
+          numeroCarta,
+          matricula,
+          dataHora,
+          v1,
+          v2,
+          v3,
+          v4,
+          v5,
+          media,
+          range,
+          observacao,
+          historico, // extraímos historico para que não seja enviado ao Protheus
+          ...restOfData
+        } = measurementData;
+
+        const orderedData = {
+          op,
+          numeroCarta: numeroCarta || "",
+          matricula,
+          dataHora,
+          v1,
+          v2,
+          v3,
+          v4,
+          v5,
+          media,
+          range,
+          observacao,
+          ...restOfData
+        };
+
+        console.log('[CEP] Payload final estruturado enviado ao ERP Protheus:', JSON.stringify(orderedData, null, 2));
+
+        const erpResponse = await fetch(config.register, {
+          method: 'PUT',
           headers,
-          body: JSON.stringify(measurementData)
+          body: JSON.stringify(orderedData)
         });
         const data = await erpResponse.json();
+        console.log('[CEP] Resposta do ERP (status:', erpResponse.status, '):', JSON.stringify(data, null, 2));
         return res.status(erpResponse.status).json(data);
       } catch (erpError) {
         console.error('[CEP] Erro ao enviar medição ao ERP Externo:', erpError.message);
+        console.error('[CEP] Detalhes do erro:', { cause: erpError.cause, code: erpError.code, name: erpError.name });
         console.log('[CEP] Fallback: Registrando localmente no Mock Data para a OP:', measurementData.op);
         const { op, historico } = measurementData;
         if (op && mockErpData[op]) {
@@ -169,4 +216,39 @@ export const registerMeasurementCEP = async (req, res) => {
     console.error('Erro ao registrar medição CEP:', error);
     res.status(500).json({ error: 'Erro ao persistir medição no ERP.' });
   }
+};
+
+/**
+ * Retorna o status da configuração do ERP Protheus para o painel admin.
+ * Os valores sensíveis (senha) são mascarados. Não expõe credenciais.
+ */
+export const getErpConfigStatus = (req, res) => {
+  const config = getProtheusConfig();
+
+  const mascarar = (valor) => {
+    if (!valor) return null;
+    if (valor.length <= 4) return '****';
+    return valor.substring(0, 3) + '*'.repeat(valor.length - 3);
+  };
+
+  const mascararUrl = (url) => {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      return `${parsed.protocol}//${parsed.hostname}:${parsed.port}${parsed.pathname}`;
+    } catch {
+      // Se não for URL válida, mascara parcialmente
+      return url.length > 10 ? url.substring(0, 10) + '...' : url;
+    }
+  };
+
+  res.json({
+    configurado: !!(config.load && config.user && config.password),
+    protheus_api_url: process.env.PROTHEUS_API_URL || null,
+    endpoint_load: mascararUrl(config.load),
+    endpoint_register: mascararUrl(config.register),
+    api_user: mascarar(config.user),
+    api_password: config.password ? '••••••••' : null,
+    fonte: 'Arquivo .env (variáveis de ambiente)'
+  });
 };

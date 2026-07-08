@@ -81,6 +81,7 @@ export const LancamentoCep = () => {
       await loadCarta(opInput);
       setIsModalOpen(false);
     } catch (err) {
+      console.error('[LancamentoCep] Erro ao carregar OP:', err);
       // Erro já é tratado na store e exibido se necessário
     }
   };
@@ -136,6 +137,7 @@ export const LancamentoCep = () => {
       const firstField = document.querySelector('input[name="v1"]') as HTMLInputElement;
       firstField?.focus();
     } catch (err) {
+      console.error('[LancamentoCep] Erro ao registrar medição:', err);
       alert("Erro ao registrar medição. Verifique a conexão.");
     }
   };

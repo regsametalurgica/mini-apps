@@ -61,29 +61,18 @@ export const updateUserPermissions = async (req, res) => {
   }
 };
 
-// Atualizar configurações de um aplicativo
+// Atualizar configurações de um aplicativo (apenas notificações)
 export const updateAppSettings = async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      notificar_por_email, 
-      email_notificacao, 
-      cep_endpoint_load, 
-      cep_endpoint_register,
-      cep_api_user,
-      cep_api_password
-    } = req.body;
+    const { notificar_por_email, email_notificacao } = req.body;
 
     await pool.query(
       `UPDATE aplicativos 
        SET notificar_por_email = $1, 
-           email_notificacao = $2,
-           cep_endpoint_load = $3,
-           cep_endpoint_register = $4,
-           cep_api_user = $5,
-           cep_api_password = $6
-       WHERE id = $7`,
-      [notificar_por_email, email_notificacao, cep_endpoint_load, cep_endpoint_register, cep_api_user, cep_api_password, id]
+           email_notificacao = $2
+       WHERE id = $3`,
+      [notificar_por_email, email_notificacao, id]
     );
 
     res.json({ success: true, message: 'Configurações do app atualizadas!' });

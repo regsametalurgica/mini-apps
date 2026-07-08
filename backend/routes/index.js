@@ -3,7 +3,7 @@ import { login } from '../controllers/authController.js';
 import { getUsers, createUser, updateUser, deleteUser } from '../controllers/userController.js';
 import { getApps, getUserPermissions, updateUserPermissions, updateAppSettings } from '../controllers/appController.js';
 import { iniciarAutomacaoRH, getMarcacoesRH } from '../controllers/rhController.js';
-import { loadCartaCEP, registerMeasurementCEP } from '../controllers/cepController.js';
+import { loadCartaCEP, registerMeasurementCEP, getErpConfigStatus } from '../controllers/cepController.js';
 import { getSettings, updateSettings } from '../controllers/settingsController.js';
 import { verifyToken, isAdmin } from '../middlewares/authMiddleware.js';
 
@@ -36,7 +36,10 @@ router.get('/rh/marcacoes', verifyToken, getMarcacoesRH);
 
 // Controle Estatístico de Processo (CEP)
 router.post('/cep/load', verifyToken, loadCartaCEP);
-router.post('/cep/register', verifyToken, registerMeasurementCEP);
+router.put('/cep/register', verifyToken, registerMeasurementCEP);
+
+// Status da Integração ERP Protheus (Apenas Admin — somente leitura)
+router.get('/admin/erp-config', verifyToken, isAdmin, getErpConfigStatus);
 
 // Configurações do Sistema (Apenas Admin)
 router.get('/admin/settings', verifyToken, isAdmin, getSettings);

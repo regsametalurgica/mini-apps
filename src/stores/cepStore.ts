@@ -85,8 +85,9 @@ export const useCepStore = create<CepState>((set, get) => ({
       }
 
       set({ data: result, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar carta CEP';
+      set({ error: errorMessage, isLoading: false });
       throw error;
     }
   },
@@ -97,38 +98,38 @@ export const useCepStore = create<CepState>((set, get) => ({
     
     if (!data) return;
 
-    // Calcula o novo histórico com a nova medição inclusa, limitando aos últimos 25 pontos
-    const currentHistorico = data.historico || { xcol: [], xbar: [], range: [], xop: [], xdata: [], xhora: [], xmatricula: [], labels: [] };
-    const newXbar = [...currentHistorico.xbar, measurement.media].slice(-25);
-    const newRange = [...currentHistorico.range, measurement.range].slice(-25);
-    const newLabels = Array.from({ length: newXbar.length }, (_, i) => (i + 1).toString());
-
     try {
+      // Monta o payload para o ERP ordenando as chaves:
+      // op e numeroCarta primeiro, depois os dados da medição, seguidos pelos outros campos do ERP
+      const { op, numeroCarta, ...restOfData } = data;
+      const restClean = { ...restOfData };
+      delete (restClean as { historico?: unknown }).historico;
+
+      const payload = {
+        op,
+        numeroCarta: numeroCarta || '',
+        matricula: user?.matricula || '',            // Matrícula do usuário logado
+        dataHora: measurement.dataHora,              // Data/hora da medição
+        v1: measurement.v1,                          // 5 valores digitados
+        v2: measurement.v2,
+        v3: measurement.v3,
+        v4: measurement.v4,
+        v5: measurement.v5,
+        media: measurement.media,                    // Média calculada
+        range: measurement.range,                    // Amplitude calculada
+        observacao: measurement.observacao,          // Observação do operador
+        ...restClean                                 // Demais dados originais do ERP (cp, cpk, etc.)
+      };
+
+      console.log('[CEP Store] Payload enviado para /api/cep/register:', JSON.stringify(payload, null, 2));
+
       const response = await fetch('/api/cep/register', {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          ...data,
-          matricula: user?.matricula || '',
-          dataHora: measurement.dataHora,
-          v1: measurement.v1,
-          v2: measurement.v2,
-          v3: measurement.v3,
-          v4: measurement.v4,
-          v5: measurement.v5,
-          media: measurement.media,
-          range: measurement.range,
-          observacao: measurement.observacao,
-          historico: {
-            ...currentHistorico,
-            xbar: newXbar,
-            range: newRange,
-            labels: newLabels
-          }
-        })
+        body: JSON.stringify(payload)
       });
 
       const result = await response.json();
@@ -137,14 +138,18 @@ export const useCepStore = create<CepState>((set, get) => ({
         throw new Error(result.error || 'Erro ao registrar medição');
       }
 
-      // Se o ERP/backend retornar a carta CEP completa e atualizada, nós a salvamos.
-      // Caso contrário, fazemos a atualização local do histórico como fallback.
+      // Após sucesso, atualiza o gráfico localmente com a nova medição
+      const currentHistorico = data.historico || { xcol: [], xbar: [], range: [], xop: [], xdata: [], xhora: [], xmatricula: [], labels: [] };
+      const newXbar = [...currentHistorico.xbar, measurement.media].slice(-25);
+      const newRange = [...currentHistorico.range, measurement.range].slice(-25);
+      const newLabels = Array.from({ length: newXbar.length }, (_, i) => (i + 1).toString());
+
+      // Se o ERP retornar a carta atualizada, usa ela. Senão, atualiza localmente.
       if (result && result.historico) {
         set({ data: result });
       } else {
         set((state) => {
           if (!state.data) return state;
-
           return {
             data: {
               ...state.data,
@@ -158,7 +163,7 @@ export const useCepStore = create<CepState>((set, get) => ({
           };
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro no registro:', error);
       throw error;
     }

@@ -21,7 +21,7 @@ export const AppLayout = () => {
   const historicoAgrupado = useMemo(() => {
     if (!data?.historico?.xcol || !data?.tamanhoAmostra) return null;
 
-    const { xcol, xop, xdata, xhora, xmatricula, xbar, range } = data.historico;
+    const { xcol, xop, xdata, xhora, xmatricula } = data.historico;
     const tamanho = data.tamanhoAmostra;
     const totalGrupos = Math.ceil(xcol.length / tamanho);
 
@@ -29,14 +29,6 @@ export const AppLayout = () => {
     for (let g = 0; g < totalGrupos; g++) {
       const inicio = g * tamanho;
       const valores = xcol.slice(inicio, inicio + tamanho);
-
-      // Calcula média e amplitude para o grupo
-      const mediaGrupo = xbar.length > 0
-        ? (g < Math.ceil(xbar.length / tamanho) ? xbar[g] : null)
-        : null;
-      const rangeGrupo = range.length > 0
-        ? (g < Math.ceil(range.length / tamanho) ? range[g] : null)
-        : null;
 
       // Calcula média e amplitude a partir dos valores xcol
       const valoresNumericos = valores.filter(v => !isNaN(v));
