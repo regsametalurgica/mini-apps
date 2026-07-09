@@ -47,6 +47,7 @@ const getProtheusConfig = () => {
   return {
     load: process.env.PROTHEUS_ENDPOINT_CEP_LOAD || null,
     register: process.env.PROTHEUS_ENDPOINT_CEP_REGISTER || null,
+    recursos: process.env.PROTHEUS_ENDPOINT_CEP_RECURSOS || null,
     user: process.env.PROTHEUS_API_USER || null,
     password: process.env.PROTHEUS_API_PASSWORD || null
   };
@@ -57,13 +58,13 @@ const getProtheusConfig = () => {
  */
 export const loadCartaCEP = async (req, res) => {
   try {
-    const { op, matricula } = req.body;
+    const { op, matricula, numeroCarta, recurso } = req.body;
 
     if (!op) {
       return res.status(400).json({ error: 'Número da OP é obrigatório.' });
     }
 
-    console.log(`[CEP] Carregando carta para OP: ${op} (Matrícula: ${matricula})`);
+    console.log(`[CEP] Carregando carta para OP: ${op} (Matrícula: ${matricula}, Carta: ${numeroCarta || 'N/A'}, Recurso: ${recurso || 'N/A'})`);
 
     const config = getProtheusConfig();
 
@@ -87,7 +88,7 @@ export const loadCartaCEP = async (req, res) => {
         const erpResponse = await fetch(config.load, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ op, matricula })
+          body: JSON.stringify({ op, matricula, numeroCarta: numeroCarta || '', recurso: recurso || '' })
         });
         const data = await erpResponse.json();
         if (!erpResponse.ok) {
@@ -153,6 +154,7 @@ export const registerMeasurementCEP = async (req, res) => {
           op,
           numeroCarta,
           matricula,
+          recurso,
           dataHora,
           v1,
           v2,
@@ -170,6 +172,7 @@ export const registerMeasurementCEP = async (req, res) => {
           op,
           numeroCarta: numeroCarta || "",
           matricula,
+          recurso: recurso || "",
           dataHora,
           v1,
           v2,
@@ -215,6 +218,59 @@ export const registerMeasurementCEP = async (req, res) => {
   } catch (error) {
     console.error('Erro ao registrar medição CEP:', error);
     res.status(500).json({ error: 'Erro ao persistir medição no ERP.' });
+  }
+};
+
+/**
+ * Carrega os recursos disponíveis para um operador (matrícula) a partir do ERP
+ */
+export const loadRecursosCEP = async (req, res) => {
+  try {
+    const { matricula } = req.body;
+
+    if (!matricula) {
+      return res.status(400).json({ error: 'Matrícula é obrigatória.' });
+    }
+
+    console.log(`[CEP] ========================================`);
+    console.log(`[CEP] REQUISIÇÃO DE RECURSOS`);
+    console.log(`[CEP] Matrícula: ${matricula}`);
+    console.log(`[CEP] ========================================`);
+
+    const config = getProtheusConfig();
+
+    if (!config.recursos) {
+      console.error('[CEP] !!! Endpoint CEP_RECURSOS não configurado no .env');
+      return res.status(503).json({ error: 'Endpoint de recursos não configurado. Verifique a variável PROTHEUS_ENDPOINT_CEP_RECURSOS no .env.' });
+    }
+
+    console.log(`[CEP] >>> Enviando POST para ERP: ${config.recursos}`);
+    console.log(`[CEP] >>> Payload: ${JSON.stringify({ matricula })}`);
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (config.user && config.password) {
+      const authBuffer = Buffer.from(`${config.user}:${config.password}`).toString('base64');
+      headers['Authorization'] = `Basic ${authBuffer}`;
+    }
+
+    const erpResponse = await fetch(config.recursos, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ matricula })
+    });
+    const data = await erpResponse.json();
+    console.log(`[CEP] <<< Resposta do ERP (status: ${erpResponse.status}):`);
+    console.log('[CEP] <<< Dados:', JSON.stringify(data, null, 2));
+
+    if (!erpResponse.ok) {
+      return res.status(erpResponse.status).json(data);
+    }
+
+    return res.json(data);
+  } catch (error) {
+    console.error(`[CEP] !!! FALHA ao carregar recursos do ERP: ${error.message}`);
+    console.error(`[CEP] !!! Detalhes:`, { cause: error.cause, code: error.code });
+    res.status(502).json({ error: 'Falha ao carregar recursos do ERP. Verifique a conexão com o Protheus.' });
   }
 };
 

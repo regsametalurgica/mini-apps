@@ -7,9 +7,10 @@ import { Modal } from '../../components/ui/Modal';
 export const AppLayout = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
-  const { data } = useCepStore();
+  const { data, recursoSelecionado } = useCepStore();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
@@ -58,8 +59,28 @@ export const AppLayout = () => {
   const maxColunas = Math.max(totalColunas, 25);
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-background-main">
-      <header className="h-[60px] border-b border-border-main px-6 flex items-center justify-end shrink-0 bg-background-secondary">
+    <div className="min-h-screen w-full flex flex-col bg-background-main pt-[60px]">
+      <header className="fixed top-0 left-0 right-0 h-[60px] border-b border-border-main px-6 flex items-center justify-between shrink-0 bg-background-secondary z-30">
+        
+        {/* Resumo da OP/Carta/Recurso e CP/CPK no canto superior esquerdo */}
+        {data ? (
+          <div className="flex flex-col justify-center text-content-main py-1 select-none">
+            <div className="flex items-center gap-3 text-[11px] font-semibold text-content-tertiary">
+              <span>OP: <strong className="text-primary font-bold text-[12px]">{data.op}</strong></span>
+              <span className="w-[1px] h-3 bg-border-main/60"></span>
+              <span>Carta nº: <strong className="text-primary font-bold text-[12px]">{data.numeroCarta}</strong></span>
+              <span className="w-[1px] h-3 bg-border-main/60"></span>
+              <span className="truncate max-w-[220px]">Recurso: <strong className="text-primary font-bold text-[12px]">{recursoSelecionado || '---'}</strong></span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] font-semibold text-content-tertiary mt-0.5">
+              <span>CP: <strong className="text-green-500 font-bold text-[12px]">{data.cp}</strong></span>
+              <span className="w-[1px] h-3 bg-border-main/60"></span>
+              <span>CPK: <strong className="text-green-500 font-bold text-[12px]">{data.cpk}</strong></span>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1" />
+        )}
 
         {/* Profile Menu e Histórico */}
         <div className="flex items-center gap-4">
@@ -69,6 +90,14 @@ export const AppLayout = () => {
           >
             <i className="bi bi-clock-history"></i>
             Histórico
+          </button>
+
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="h-9 px-4 bg-red-600 hover:bg-red-700 rounded-lg text-[13px] font-bold text-white transition-colors flex items-center gap-2 shadow-sm"
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            Sair
           </button>
 
           <div className="w-[1px] h-6 bg-border-main mx-2"></div>
@@ -241,6 +270,43 @@ export const AppLayout = () => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </Modal>
+      )}
+      {/* Modal de Confirmação de Saída */}
+      {isLogoutModalOpen && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setIsLogoutModalOpen(false)}
+          className="max-w-[400px]"
+        >
+          <div className="flex flex-col gap-6 text-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-[24px]">
+                <i className="bi bi-box-arrow-right"></i>
+              </div>
+              <h2 className="text-[18px] font-bold text-content-main">
+                Deseja realmente sair?
+              </h2>
+              <p className="text-[13px] text-content-tertiary">
+                Sua sessão atual será encerrada e você precisará fazer login novamente para acessar o sistema.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsLogoutModalOpen(false)}
+                className="flex-1 h-10 border border-border-main rounded-lg text-[13px] font-bold text-content-secondary hover:bg-background-tertiary transition-colors"
+              >
+                NÃO, VOLTAR
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[13px] font-bold transition-colors shadow-sm"
+              >
+                SIM, SAIR
+              </button>
+            </div>
           </div>
         </Modal>
       )}

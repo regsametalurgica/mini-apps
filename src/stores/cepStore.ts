@@ -38,10 +38,21 @@ interface CepData {
   };
 }
 
+interface Recurso {
+  codigo: string;
+  descricao: string;
+}
+
 interface CepState {
   data: CepData | null;
   isLoading: boolean;
   error: string | null;
+  recursos: Recurso[];
+  recursosLoading: boolean;
+  recursosError: string | null;
+  recursoSelecionado: string;
+  loadRecursos: (matricula: number | string) => Promise<void>;
+  setRecurso: (recurso: string) => void;
   loadCarta: (op: string) => Promise<void>;
   reset: () => void;
   registerMeasurement: (measurement: {
@@ -61,11 +72,66 @@ export const useCepStore = create<CepState>((set, get) => ({
   data: null,
   isLoading: false,
   error: null,
+  recursos: [],
+  recursosLoading: false,
+  recursosError: null,
+  recursoSelecionado: '',
 
   reset: () => set({ data: null, error: null }),
 
+  setRecurso: (recurso) => set({ recursoSelecionado: recurso }),
+
+  loadRecursos: async (matricula) => {
+    const { token } = useAuthStore.getState();
+    set({ recursosLoading: true, recursosError: null });
+
+    try {
+      console.log('[CEP Store] Carregando recursos para matrícula:', matricula);
+      const response = await fetch('/api/cep/recursos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ matricula })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('[CEP Store] Erro ao carregar recursos:', result);
+        const msg = result?.mensagem || result?.error || 'Erro ao carregar recursos do ERP.';
+        set({ recursos: [], recursosLoading: false, recursosError: msg });
+        return;
+      }
+
+      if (result && (result.sucesso === false || result.sucesso === 'false')) {
+        console.error('[CEP Store] ERP retornou erro de permissão:', result);
+        const msg = result.mensagem || 'Operador não pode operar CEP.';
+        set({ recursos: [], recursosLoading: false, recursosError: msg });
+        return;
+      }
+
+      // Formato real do ERP: { RECURSO: [{ codigo, descricao }, ...], sucesso, mensagem }
+      const lista: Recurso[] = Array.isArray(result?.RECURSO)
+        ? result.RECURSO.map((r: { codigo?: string; descricao?: string }) => ({
+            codigo: (r.codigo || '').trim(),
+            descricao: (r.descricao || '').trim()
+          })).filter((r: Recurso) => r.codigo)
+        : [];
+
+      console.log('[CEP Store] Recursos carregados:', lista);
+      set({ recursos: lista, recursosLoading: false, recursosError: null });
+    } catch (error) {
+      console.error('[CEP Store] Erro ao carregar recursos:', error);
+      set({ recursos: [], recursosLoading: false, recursosError: 'Falha na comunicação ao carregar recursos. Verifique a conexão com o ERP.' });
+    }
+  },
+
   loadCarta: async (op) => {
     const { user, token } = useAuthStore.getState();
+    const currentData = get().data;
+    const recurso = get().recursoSelecionado;
     set({ isLoading: true, error: null });
 
     try {
@@ -75,7 +141,12 @@ export const useCepStore = create<CepState>((set, get) => ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ op, matricula: user?.matricula })
+        body: JSON.stringify({
+          op,
+          matricula: user?.matricula,
+          numeroCarta: currentData?.numeroCarta || '',
+          recurso: recurso || ''
+        })
       });
 
       const result = await response.json();
@@ -94,7 +165,7 @@ export const useCepStore = create<CepState>((set, get) => ({
 
   registerMeasurement: async (measurement) => {
     const { user, token } = useAuthStore.getState();
-    const { data } = get();
+    const { data, recursoSelecionado } = get();
     
     if (!data) return;
 
@@ -109,6 +180,7 @@ export const useCepStore = create<CepState>((set, get) => ({
         op,
         numeroCarta: numeroCarta || '',
         matricula: user?.matricula || '',            // Matrícula do usuário logado
+        recurso: recursoSelecionado || '',           // Recurso selecionado pelo operador
         dataHora: measurement.dataHora,              // Data/hora da medição
         v1: measurement.v1,                          // 5 valores digitados
         v2: measurement.v2,

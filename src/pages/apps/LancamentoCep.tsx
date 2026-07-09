@@ -30,7 +30,7 @@ ChartJS.register(
 );
 
 export const LancamentoCep = () => {
-  const { data, isLoading, error, loadCarta, registerMeasurement, reset } = useCepStore();
+  const { data, isLoading, error, loadCarta, registerMeasurement, reset, recursos, recursosLoading, recursosError, recursoSelecionado, loadRecursos, setRecurso } = useCepStore();
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
 
@@ -45,6 +45,7 @@ export const LancamentoCep = () => {
   const [vValues, setVValues] = useState({ v1: '', v2: '', v3: '', v4: '', v5: '' });
   const [observacao, setObservacao] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isValidationErrorOpen, setIsValidationErrorOpen] = useState(false);
 
   // Data e Hora editáveis
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -54,6 +55,13 @@ export const LancamentoCep = () => {
   useEffect(() => {
     reset();
   }, [reset]);
+
+  // Carrega recursos disponíveis do ERP ao montar o componente
+  useEffect(() => {
+    if (user?.matricula) {
+      loadRecursos(user.matricula);
+    }
+  }, [user?.matricula, loadRecursos]);
 
   // Cálculos automáticos
   const stats = useMemo(() => {
@@ -75,6 +83,11 @@ export const LancamentoCep = () => {
   const handleStart = async () => {
     if (!opInput) {
       alert("Por favor, digite o número da Ordem de Produção.");
+      return;
+    }
+
+    if (!recursoSelecionado) {
+      alert("Por favor, selecione um recurso.");
       return;
     }
 
@@ -112,7 +125,7 @@ export const LancamentoCep = () => {
   const handleRegister = async () => {
     const values = Object.values(vValues).map(v => parseFloat(v));
     if (values.some(v => isNaN(v))) {
-      alert("Por favor, preencha todos os valores (V1 a V5).");
+      setIsValidationErrorOpen(true);
       return;
     }
 
@@ -158,43 +171,98 @@ export const LancamentoCep = () => {
     return (
       <Modal isOpen={true} onClose={handleCancel}>
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
-              <i className="bi bi-search text-primary"></i>
-              Iniciar Controle CEP
-            </h2>
-            <p className="text-[14px] text-content-tertiary">
-              Informe o número da Ordem de Produção para carregar a carta correspondente.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <Input
-              label="Número da Ordem de Produção (OP)"
-              placeholder="Ex: 1958"
-              value={opInput}
-              onChange={(e) => setOpInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleStart()}
-              autoFocus
-              icon="bi-hash"
-            />
-
-            {error && (
-              <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
-                <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
-                <span className="text-[12px] text-status-error font-medium">{error}</span>
+          {recursosError ? (
+            <>
+              <div className="flex flex-col gap-2">
+                <h2 className="text-[20px] font-bold text-status-error flex items-center gap-3">
+                  <i className="bi bi-exclamation-octagon text-status-error"></i>
+                  Erro ao carregar
+                </h2>
+                <p className="text-[14px] text-content-secondary mt-2 bg-status-error/10 border border-status-error/20 p-4 rounded-lg font-medium">
+                  {recursosError}
+                </p>
               </div>
-            )}
-          </div>
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
+                  CANCELAR E SAIR
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2">
+                <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
+                  <i className="bi bi-search text-primary"></i>
+                  Iniciar Controle CEP
+                </h2>
+                <p className="text-[14px] text-content-tertiary">
+                  Informe o número da Ordem de Produção para carregar a carta correspondente.
+                </p>
+              </div>
 
-          <div className="flex gap-3 pt-2">
-            <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
-              CANCELAR E SAIR
-            </Button>
-            <Button onClick={handleStart} isLoading={isLoading} className="flex-1 whitespace-nowrap !px-2">
-              INICIAR PROCESSO
-            </Button>
-          </div>
+              <div className="space-y-4">
+                <Input
+                  label="Número da Ordem de Produção (OP)"
+                  placeholder="Ex: 1958"
+                  value={opInput}
+                  onChange={(e) => setOpInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+                  autoFocus
+                  icon="bi-hash"
+                />
+
+                {/* Seleção de Recurso */}
+                <div className="flex flex-col gap-1">
+                  <label className="text-[13px] font-bold text-content-main">Recurso</label>
+                  <div className="relative">
+                    <i className="bi bi-gear absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-primary pointer-events-none"></i>
+                    {recursosLoading ? (
+                      <div className="w-full h-[42px] bg-background-main border border-border-main rounded-lg flex items-center pl-10 pr-4 text-[13px] text-content-tertiary">
+                        <div className="w-4 h-4 border-2 border-border-main border-t-primary rounded-full animate-spin mr-2"></div>
+                        Carregando recursos...
+                      </div>
+                    ) : recursos.length > 0 ? (
+                      <select
+                        value={recursoSelecionado}
+                        onChange={(e) => setRecurso(e.target.value)}
+                        className="w-full h-[42px] bg-background-main border border-border-main rounded-lg pl-10 pr-8 text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
+                      >
+                        <option value="">Selecione um recurso...</option>
+                        {recursos.map((recurso) => (
+                          <option key={recurso.codigo} value={recurso.codigo}>
+                            {recurso.codigo} - {recurso.descricao}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <div className="w-full h-[42px] bg-background-main border border-status-error/30 rounded-lg flex items-center pl-10 pr-4 text-[12px] text-status-error">
+                        Nenhum recurso disponível
+                      </div>
+                    )}
+                    {!recursosLoading && recursos.length > 0 && (
+                      <i className="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-content-tertiary pointer-events-none"></i>
+                    )}
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
+                    <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
+                    <span className="text-[12px] text-status-error font-medium">{error}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
+                  CANCELAR E SAIR
+                </Button>
+                <Button onClick={handleStart} isLoading={isLoading} className="flex-1 whitespace-nowrap !px-2">
+                  INICIAR PROCESSO
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     );
@@ -321,26 +389,6 @@ export const LancamentoCep = () => {
     <div className="flex h-full bg-background-main text-content-main overflow-hidden relative">
       {/* MENU ESQUERDO — Área Operacional */}
       <div className="w-[380px] bg-background-secondary border-r border-border-main p-6 flex flex-col gap-6 shrink-0 overflow-y-auto">
-        {/* Resumo Topo */}
-        <div className="grid grid-cols-4 gap-4 pb-6 border-b border-border-main">
-          <div>
-            <p className="text-[10px] text-content-tertiary uppercase font-bold tracking-wider">OP</p>
-            <p className="text-[14px] font-semibold text-primary">{data.op}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-content-tertiary uppercase font-bold tracking-wider">Carta nº</p>
-            <p className="text-[14px] font-semibold text-primary">{data.numeroCarta}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-content-tertiary uppercase font-bold tracking-wider">CP</p>
-            <p className="text-[14px] font-semibold text-green-500">{data.cp}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-content-tertiary uppercase font-bold tracking-wider">CPK</p>
-            <p className="text-[14px] font-semibold text-green-500">{data.cpk}</p>
-          </div>
-        </div>
-
         {/* Info Editável */}
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -487,6 +535,29 @@ export const LancamentoCep = () => {
             <p className="text-content-main font-medium text-[16px]">
               Registrando dados de CEP, aguarde...
             </p>
+          </div>
+        </Modal>
+      )}
+      {/* Modal de Validação de Medições */}
+      {isValidationErrorOpen && (
+        <Modal isOpen={true} onClose={() => setIsValidationErrorOpen(false)}>
+          <div className="flex flex-col gap-6 text-center py-2">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-status-error/10 flex items-center justify-center text-status-error text-[24px]">
+                <i className="bi bi-exclamation-triangle-fill"></i>
+              </div>
+              <h2 className="text-[18px] font-bold text-content-main">
+                Valores Incompletos
+              </h2>
+              <p className="text-[13px] text-content-tertiary">
+                Por favor, preencha todos os valores de medição (V1 a V5) antes de registrar.
+              </p>
+            </div>
+            <div className="flex pt-2">
+              <Button onClick={() => setIsValidationErrorOpen(false)} className="flex-1">
+                ENTENDIDO
+              </Button>
+            </div>
           </div>
         </Modal>
       )}
