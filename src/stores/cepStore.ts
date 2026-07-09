@@ -138,30 +138,13 @@ export const useCepStore = create<CepState>((set, get) => ({
         throw new Error(result.error || 'Erro ao registrar medição');
       }
 
-      // Após sucesso, atualiza o gráfico localmente com a nova medição
-      const currentHistorico = data.historico || { xcol: [], xbar: [], range: [], xop: [], xdata: [], xhora: [], xmatricula: [], labels: [] };
-      const newXbar = [...currentHistorico.xbar, measurement.media].slice(-25);
-      const newRange = [...currentHistorico.range, measurement.range].slice(-25);
-      const newLabels = Array.from({ length: newXbar.length }, (_, i) => (i + 1).toString());
-
-      // Se o ERP retornar a carta atualizada, usa ela. Senão, atualiza localmente.
+      // Se o ERP retornar a carta inteira e atualizada no PUT, usa ela.
+      // Caso contrário, fazemos um POST novamente para carregar os dados atualizados.
       if (result && result.historico) {
         set({ data: result });
       } else {
-        set((state) => {
-          if (!state.data) return state;
-          return {
-            data: {
-              ...state.data,
-              historico: {
-                ...currentHistorico,
-                xbar: newXbar,
-                range: newRange,
-                labels: newLabels
-              }
-            }
-          };
-        });
+        console.log('[CEP Store] Medição registrada. Fazendo nova requisição (POST) para atualizar os dados da OP:', op);
+        await get().loadCarta(op);
       }
     } catch (error) {
       console.error('Erro no registro:', error);

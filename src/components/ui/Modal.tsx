@@ -5,9 +5,10 @@ interface ModalProps {
   onClose: () => void;
   children: ReactNode;
   className?: string;
+  hideCloseButton?: boolean;
 }
 
-export const Modal = ({ isOpen, onClose, children, className }: ModalProps) => {
+export const Modal = ({ isOpen, onClose, children, className, hideCloseButton }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
@@ -15,17 +16,19 @@ export const Modal = ({ isOpen, onClose, children, className }: ModalProps) => {
       {/* Overlay */}
       <div 
         className="absolute inset-0 bg-black/65 backdrop-blur-[2px] transition-opacity"
-        onClick={onClose}
+        onClick={!hideCloseButton ? onClose : undefined}
       />
       
       {/* Modal Container */}
       <div className={`relative w-full ${className || 'max-w-md'} bg-background-secondary rounded-md border border-border-main p-6 shadow-2xl z-10 animate-in fade-in zoom-in duration-200`}>
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-content-tertiary hover:text-content-main transition-colors"
-        >
-          <i className="bi bi-x-lg"></i>
-        </button>
+        {!hideCloseButton && (
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-content-tertiary hover:text-content-main transition-colors"
+          >
+            <i className="bi bi-x-lg"></i>
+          </button>
+        )}
         {children}
       </div>
     </div>

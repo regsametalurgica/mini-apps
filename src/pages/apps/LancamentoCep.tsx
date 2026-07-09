@@ -44,6 +44,7 @@ export const LancamentoCep = () => {
   // Form State
   const [vValues, setVValues] = useState({ v1: '', v2: '', v3: '', v4: '', v5: '' });
   const [observacao, setObservacao] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Data e Hora editáveis
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -118,6 +119,9 @@ export const LancamentoCep = () => {
     // Monta a dataHora unindo data e hora informados na tela
     const dataHora = `${selectedDate}T${selectedTime}:00`;
 
+    setIsSaving(true);
+    const startTime = Date.now();
+
     try {
       await registerMeasurement({
         v1: values[0],
@@ -131,6 +135,12 @@ export const LancamentoCep = () => {
         dataHora
       });
 
+      // Garante no mínimo 3 segundos de animação
+      const elapsedTime = Date.now() - startTime;
+      if (elapsedTime < 3000) {
+        await new Promise(resolve => setTimeout(resolve, 3000 - elapsedTime));
+      }
+
       // Limpar formulário e focar no primeiro campo
       setVValues({ v1: '', v2: '', v3: '', v4: '', v5: '' });
       setObservacao('');
@@ -139,6 +149,8 @@ export const LancamentoCep = () => {
     } catch (err) {
       console.error('[LancamentoCep] Erro ao registrar medição:', err);
       alert("Erro ao registrar medição. Verifique a conexão.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -466,6 +478,18 @@ export const LancamentoCep = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Salvamento */}
+      {isSaving && (
+        <Modal isOpen={true} onClose={() => {}} hideCloseButton={true}>
+          <div className="flex flex-col items-center justify-center py-8 gap-6">
+            <div className="w-12 h-12 border-4 border-border-main border-t-primary rounded-full animate-spin"></div>
+            <p className="text-content-main font-medium text-[16px]">
+              Registrando dados de CEP, aguarde...
+            </p>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
