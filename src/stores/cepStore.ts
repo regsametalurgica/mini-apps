@@ -7,6 +7,11 @@ interface CepLimits {
   lic: number;
 }
 
+export interface ObservacaoPonto {
+  ponto: string;
+  obs: string;
+}
+
 interface CepData {
   op: string;
   numeroCarta: string;
@@ -37,6 +42,7 @@ interface CepData {
     xmatricula: string[];
     labels: string[];
   };
+  xobservacao?: ObservacaoPonto[];
 }
 
 interface Recurso {

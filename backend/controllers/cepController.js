@@ -36,7 +36,25 @@ const mockErpData = {
       xhora: [],
       xmatricula: [],
       labels: Array.from({ length: 25 }, (_, i) => (i + 1).toString())
-    }
+    },
+    xobservacao: [
+      {
+        ponto: "0001",
+        obs: "Validando OBS - SE DER RUIM É CULPA DO LUCIANO !!"
+      },
+      {
+        ponto: "0002",
+        obs: "Testando denovo o sistema do luciano pé de pano"
+      },
+      {
+        ponto: "0003",
+        obs: "Novo teste com acentuação -  Luciano Pé de pano"
+      },
+      {
+        ponto: "0005",
+        obs: "Novo registro com observação"
+      }
+    ]
   },
   "1959": {
     op: "1959",

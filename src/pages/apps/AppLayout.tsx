@@ -11,6 +11,7 @@ export const AppLayout = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [selectedObs, setSelectedObs] = useState<{ ponto: string; texto: string } | null>(null);
 
   const handleLogout = () => {
     setIsProfileMenuOpen(false);
@@ -40,6 +41,13 @@ export const AppLayout = () => {
         ? Math.max(...valoresNumericos) - Math.min(...valoresNumericos)
         : 0;
 
+      // Procura observação correspondente ao ponto (g + 1)
+      const pontoStr = String(g + 1).padStart(4, '0');
+      // Busca de xobservacao na raiz ou dentro de historico
+      const observacaoObj = (data.xobservacao || (data.historico as any).xobservacao)?.find(
+        (o: { ponto: string; obs: string }) => o.ponto === pontoStr
+      );
+
       colunas.push({
         valores,
         op: xop?.[g]?.trim() || '',
@@ -48,6 +56,7 @@ export const AppLayout = () => {
         matricula: xmatricula?.[g]?.trim() || '',
         media: mediaCalc,
         range: rangeCalc,
+        observacao: observacaoObj?.obs || '',
       });
     }
 
@@ -259,6 +268,36 @@ export const AppLayout = () => {
                   ))}
                 </tr>
 
+                {/* Linha: Observação */}
+                <tr className="border-b border-border-main hover:bg-background-tertiary transition-colors h-7 lg:h-8">
+                  <td className="px-2 border-r border-border-main font-semibold bg-background-secondary w-[85px] sticky left-0 z-10 text-content-secondary truncate text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]">
+                    Observação
+                  </td>
+                  {Array.from({ length: maxColunas }, (_, i) => {
+                    const col = historicoAgrupado && i < totalColunas ? historicoAgrupado.colunas[i] : null;
+                    const temObs = col && col.observacao;
+                    return (
+                      <td key={i} className="border-r border-border-main text-center last:border-r-0 min-w-[70px] align-middle">
+                        {col ? (
+                          temObs ? (
+                            <button
+                              onClick={() => setSelectedObs({ ponto: String(i + 1).padStart(4, '0'), texto: col.observacao })}
+                              className="text-blue-500 hover:text-blue-700 transition-colors focus:outline-none inline-flex items-center justify-center p-1 rounded hover:bg-blue-100/50"
+                              title="Ver observação"
+                            >
+                              <i className="bi bi-info-circle-fill text-[14px]"></i>
+                            </button>
+                          ) : (
+                            <span className="text-content-tertiary">-</span>
+                          )
+                        ) : (
+                          ''
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+
                 {/* Linha dos índices embaixo */}
                 <tr className="bg-background-secondary h-7 lg:h-8">
                   <td className="px-2 border-r border-border-main bg-background-secondary w-[85px] sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.3)]"></td>
@@ -270,6 +309,36 @@ export const AppLayout = () => {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </Modal>
+      )}
+      {/* Modal de Detalhe da Observação */}
+      {selectedObs && (
+        <Modal 
+          isOpen={true} 
+          onClose={() => setSelectedObs(null)}
+          className="max-w-[400px]"
+        >
+          <div className="flex flex-col gap-4 text-left">
+            <div className="flex items-center gap-2 pb-2 border-b border-border-main">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-[18px]">
+                <i className="bi bi-info-circle-fill"></i>
+              </div>
+              <h3 className="text-[15px] font-bold text-content-main font-semibold">
+                Observação - Ponto {selectedObs.ponto}
+              </h3>
+            </div>
+            <p className="text-[13px] text-content-secondary whitespace-pre-line leading-relaxed">
+              {selectedObs.texto}
+            </p>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedObs(null)}
+                className="px-4 h-9 bg-primary hover:bg-primary/90 text-white rounded-lg text-[13px] font-bold transition-colors shadow-sm"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </Modal>
       )}
