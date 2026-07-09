@@ -22,6 +22,7 @@ interface CepData {
   cliente: string;
   tamanhoAmostra: number;
   frequencia: string;
+  autorizagravar?: boolean;
   limitesControle: {
     xbar: CepLimits;
     range: CepLimits;
@@ -168,6 +169,10 @@ export const useCepStore = create<CepState>((set, get) => ({
     const { data, recursoSelecionado } = get();
     
     if (!data) return;
+
+    if (data.autorizagravar === false) {
+      throw new Error('Lançamento bloqueado: o ERP não autorizou gravação para esta Ordem de Produção.');
+    }
 
     try {
       // Monta o payload para o ERP ordenando as chaves:

@@ -397,6 +397,7 @@ export const LancamentoCep = () => {
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="flex-1"
+            disabled={data.autorizagravar === false}
           />
           <Input
             label="Hora"
@@ -404,6 +405,7 @@ export const LancamentoCep = () => {
             value={selectedTime}
             onChange={(e) => setSelectedTime(e.target.value)}
             className="flex-1"
+            disabled={data.autorizagravar === false}
           />
         </div>
 
@@ -414,6 +416,19 @@ export const LancamentoCep = () => {
           className="opacity-70"
           icon="bi-person"
         />
+
+        {/* Banner de Lançamento Bloqueado pelo ERP */}
+        {data.autorizagravar === false && (
+          <div className="p-3.5 rounded-lg bg-status-error/10 border border-status-error/20 flex items-start gap-3">
+            <i className="bi bi-shield-slash text-status-error text-[18px] shrink-0 mt-0.5"></i>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[13px] text-status-error font-bold leading-tight">Carta Finalizada</span>
+              <span className="text-[11px] text-status-error/85 leading-normal">
+                Você não pode adicionar mais registros para essa carta.
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Medições */}
         <div className="flex flex-col gap-3">
@@ -428,7 +443,8 @@ export const LancamentoCep = () => {
                 value={vValues[v as keyof typeof vValues]}
                 onChange={(e) => setVValues({ ...vValues, [v]: e.target.value })}
                 onKeyDown={(e) => handleKeyDown(e, v)}
-                className="h-10 bg-background-main border border-border-main rounded-lg px-2 text-[13px] focus:outline-none focus:border-primary transition-colors text-center"
+                className="h-10 bg-background-main border border-border-main rounded-lg px-2 text-[13px] focus:outline-none focus:border-primary transition-colors text-center disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background-secondary"
+                disabled={data.autorizagravar === false}
               />
             ))}
           </div>
@@ -457,12 +473,17 @@ export const LancamentoCep = () => {
           <textarea
             value={observacao}
             onChange={(e) => setObservacao(e.target.value)}
-            className="w-full bg-background-main border border-border-main rounded-lg p-3 text-[13px] min-h-[80px] focus:outline-none focus:border-primary transition-colors"
+            className="w-full bg-background-main border border-border-main rounded-lg p-3 text-[13px] min-h-[80px] focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-background-secondary"
             placeholder="Digite observações do processo..."
+            disabled={data.autorizagravar === false}
           />
         </div>
 
-        <Button onClick={handleRegister} className="w-full h-12 text-[15px] font-bold">
+        <Button 
+          onClick={handleRegister} 
+          className="w-full h-12 text-[15px] font-bold"
+          disabled={data.autorizagravar === false}
+        >
           REGISTRAR MEDIÇÃO
         </Button>
       </div>

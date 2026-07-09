@@ -22,6 +22,7 @@ const mockErpData = {
     cliente: "FIAT",
     tamanhoAmostra: 5,
     frequencia: "30min",
+    autorizagravar: true,
     limitesControle: {
       xbar: { lsc: 18.52, media: 18.42, lic: 18.32 },
       range: { lsc: 0.45, media: 0.30, lic: 0.15 }
@@ -35,6 +36,82 @@ const mockErpData = {
       xhora: [],
       xmatricula: [],
       labels: Array.from({ length: 25 }, (_, i) => (i + 1).toString())
+    }
+  },
+  "1959": {
+    op: "1959",
+    numeroCarta: "54321",
+    cp: 6.20,
+    cpk: 5.80,
+    numeroPeca: "MOLA-TRASEIRA-Y",
+    equipamento: "PRENSA-05",
+    caracteristica: "LARGURA",
+    sequencia: "020",
+    revisaoFicha: "REV-01",
+    setor: "MOLAS",
+    especificacao: "10.00 ±0.05",
+    cliente: "FORD",
+    tamanhoAmostra: 5,
+    frequencia: "30min",
+    autorizagravar: false,
+    limitesControle: {
+      xbar: { lsc: 10.05, media: 10.00, lic: 9.95 },
+      range: { lsc: 0.15, media: 0.10, lic: 0.05 }
+    },
+    historico: {
+      xcol: [],
+      xbar: [10.00, 10.01, 9.99, 10.00, 10.02, 9.98, 10.01, 10.03, 9.99, 10.00],
+      range: [0.08, 0.09, 0.07, 0.08, 0.10, 0.06, 0.07, 0.09, 0.08, 0.07],
+      xop: [],
+      xdata: [],
+      xhora: [],
+      xmatricula: [],
+      labels: Array.from({ length: 10 }, (_, i) => (i + 1).toString())
+    }
+  },
+  "079201": {
+    op: "079201",
+    numeroCarta: "000033",
+    cp: 5.06,
+    cpk: 5,
+    ITEMPO: "0009",
+    SUBIPO: "   ",
+    RECURSO: "513",
+    CHAVESZP: "00000000000000009201",
+    REVQK9: "05",
+    PECQK9: "20.5320.5006.100                        ",
+    autorizagravar: false,
+    numeroPeca: "2053205006100",
+    equipamento: "EG-450 - 1",
+    caracteristica: "F1 A 17,00 mm",
+    sequencia: "03",
+    revisaoFicha: "23/01/2024",
+    setor: "RETIFICA",
+    especificacao: "7,90 a 9,36 KG",
+    cliente: "AUMOVIO BRAZIL",
+    tamanhoAmostra: 5,
+    frequencia: 4,
+    limitesControle: {
+      xbar: {
+        lsc: 8.82,
+        media: 8.73,
+        lic: 8.64
+      },
+      range: {
+        lsc: 0.32,
+        media: 0.15,
+        lic: 0
+      }
+    },
+    historico: {
+      xcol: [],
+      xbar: [8.70, 8.73, 8.75, 8.71, 8.74, 8.72, 8.73, 8.76, 8.71, 8.72],
+      range: [0.12, 0.15, 0.11, 0.14, 0.13, 0.12, 0.15, 0.16, 0.11, 0.14],
+      xop: [],
+      xdata: [],
+      xhora: [],
+      xmatricula: [],
+      labels: Array.from({ length: 10 }, (_, i) => (i + 1).toString())
     }
   }
 };
