@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
 import { useAuthStore } from '../stores/authStore';
 
 export const Login = () => {

@@ -29,7 +29,7 @@ ChartJS.register(
 );
 
 export const LancamentoCep = () => {
-  const { data, isLoading, error, loadCarta, registerMeasurement, reset, matricula: storeMatricula, recurso: storeRecurso } = useCepStore();
+  const { data, isLoading, error, loadCarta, registerMeasurement, reset, matricula: storeMatricula } = useCepStore();
   const [searchParams] = useSearchParams();
 
   // Sidebar State
