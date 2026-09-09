@@ -1,19 +1,30 @@
-# Estágio de Build do Frontend
+# ==========================================================
+# Dockerfile — CEP Integração Protheus
+# Container único: Frontend (build estático) + Backend (Node)
+# ==========================================================
+
+# Estágio 1: Build do Frontend (React + Vite)
 FROM node:18-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 COPY . .
 RUN npm run build
 
-# Estágio de Produção (Servidor Node)
+# Estágio 2: Produção (Servidor Node.js)
 FROM node:18-alpine
 WORKDIR /app
+
+# Copia apenas os arquivos necessários para produção
 COPY package*.json ./
-RUN npm install --production
+RUN npm ci --omit=dev && npm cache clean --force
+
+# Frontend compilado (servido como arquivos estáticos pelo Express)
 COPY --from=build-stage /app/dist ./dist
+
+# Backend (Express)
 COPY --from=build-stage /app/backend ./backend
-COPY --from=build-stage /app/.env.example ./.env
 
 EXPOSE 3000
+
 CMD ["npm", "run", "start"]

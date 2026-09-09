@@ -1,33 +1,23 @@
+# ==========================================================
+# Docker Compose — CEP Integração Protheus
+# Container único: Frontend + Backend (sem banco de dados)
+# ==========================================================
+
 services:
   app:
     build: .
-    container_name: miniapps_app
+    container_name: appcep
     ports:
       - "3000:3000"
     environment:
-      - DB_HOST=db
-      - DB_USER=dba
-      - DB_PASSWORD=DBAdmin2000
-      - DB_NAME=miniapps
-      - DB_PORT=5432
       - PORT=3000
-    depends_on:
-      - db
+      # Configurações da API Protheus ERP
+      - PROTHEUS_API_URL=http://protheus:9084/restdev
+      - PROTHEUS_API_USER=RESTLOCAL
+      - PROTHEUS_API_PASSWORD=@Thunder26%
+      - PROTHEUS_ENDPOINT_CEP_LOAD=http://protheus:9084/restdev/reqop
+      - PROTHEUS_ENDPOINT_CEP_REGISTER=http://protheus:9084/restdev/gravacep
+      - PROTHEUS_ENDPOINT_CEP_RECURSOS=http://protheus:9084/restdev/recurso
+      # Segurança (necessário apenas se manter o admin)
+      - JWT_SECRET=secret_para_desenvolvimento
     restart: always
-
-  db:
-    image: postgres:15-alpine
-    container_name: miniapps_db
-    environment:
-      POSTGRES_USER: dba
-      POSTGRES_PASSWORD: DBAdmin2000
-      POSTGRES_DB: miniapps
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: always
-
-volumes:
-  pgdata:
-    driver: local

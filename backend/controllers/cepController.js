@@ -1,4 +1,4 @@
-import pool from '../config/db.js';
+// Controller CEP — Não utiliza banco de dados local
 
 /**
  * Controller para o Controle Estatístico de Processo (CEP)
