@@ -4,7 +4,7 @@
 # ==========================================================
 
 # Estágio 1: Build do Frontend (React + Vite)
-FROM node:18-alpine AS build-stage
+FROM node:22-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Estágio 2: Produção (Servidor Node.js)
-FROM node:18-alpine
+FROM node:22-alpine
 WORKDIR /app
 
 # Copia apenas os arquivos necessários para produção
