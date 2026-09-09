@@ -34,10 +34,10 @@ router.post('/admin/user-permissions', verifyToken, isAdmin, updateUserPermissio
 router.post('/rh/iniciar-automacao', verifyToken, iniciarAutomacaoRH);
 router.get('/rh/marcacoes', verifyToken, getMarcacoesRH);
 
-// Controle Estatístico de Processo (CEP)
-router.post('/cep/load', verifyToken, loadCartaCEP);
-router.post('/cep/recursos', verifyToken, loadRecursosCEP);
-router.put('/cep/register', verifyToken, registerMeasurementCEP);
+// Controle Estatístico de Processo (CEP) — Sem autenticação (acesso direto pelo ERP Protheus)
+router.post('/cep/load', loadCartaCEP);
+router.post('/cep/recursos', loadRecursosCEP);
+router.put('/cep/register', registerMeasurementCEP);
 
 // Status da Integração ERP Protheus (Apenas Admin — somente leitura)
 router.get('/admin/erp-config', verifyToken, isAdmin, getErpConfigStatus);

@@ -1,23 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../stores/authStore';
+import { Outlet } from 'react-router-dom';
 import { useCepStore } from '../../stores/cepStore';
 import { Modal } from '../../components/ui/Modal';
 
 export const AppLayout = () => {
-  const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const { data, recursoSelecionado } = useCepStore();
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const { data, recurso, matricula, reset } = useCepStore();
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [selectedObs, setSelectedObs] = useState<{ ponto: string; texto: string } | null>(null);
-
-  const handleLogout = () => {
-    setIsProfileMenuOpen(false);
-    logout();
-    navigate('/login');
-  };
 
   // Lógica para transformar xcol em colunas agrupadas pelo tamanhoAmostra
   const historicoAgrupado = useMemo(() => {
@@ -79,7 +68,7 @@ export const AppLayout = () => {
               <span className="w-[1px] h-3 bg-border-main/60"></span>
               <span>Carta nº: <strong className="text-primary font-bold text-[12px]">{data.numeroCarta}</strong></span>
               <span className="w-[1px] h-3 bg-border-main/60"></span>
-              <span className="truncate max-w-[220px]">Recurso: <strong className="text-primary font-bold text-[12px]">{recursoSelecionado || '---'}</strong></span>
+              <span className="truncate max-w-[220px]">Recurso: <strong className="text-primary font-bold text-[12px]">{recurso || '---'}</strong></span>
             </div>
             <div className="flex items-center gap-3 text-[11px] font-semibold text-content-tertiary mt-0.5">
               <span>CP: <strong className="text-green-500 font-bold text-[12px]">{data.cp}</strong></span>
@@ -91,7 +80,7 @@ export const AppLayout = () => {
           <div className="flex-1" />
         )}
 
-        {/* Profile Menu e Histórico */}
+        {/* Histórico e info do operador */}
         <div className="flex items-center gap-4">
           <button
             onClick={() => setIsHistoryModalOpen(true)}
@@ -102,67 +91,25 @@ export const AppLayout = () => {
           </button>
 
           <button
-            onClick={() => setIsLogoutModalOpen(true)}
+            onClick={() => { reset(); window.location.href = '/'; }}
             className="h-9 px-4 bg-red-600 hover:bg-red-700 rounded-lg text-[13px] font-bold text-white transition-colors flex items-center gap-2 shadow-sm"
           >
             <i className="bi bi-box-arrow-right"></i>
             Sair
           </button>
-
-          <div className="w-[1px] h-6 bg-border-main mx-2"></div>
-
-          <div className="flex flex-col items-end mr-2">
-            <span className="text-[13px] font-semibold text-content-main leading-tight">
-              {user?.nome}
-            </span>
-            <span className="text-[11px] text-content-tertiary leading-tight">
-              Matrícula: {user?.matricula || '---'}
-            </span>
-          </div>
-
-          <div className="relative">
-            <button 
-              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="w-9 h-9 rounded-full bg-background-main border border-border-main flex items-center justify-center hover:bg-background-tertiary transition-colors"
-            >
-              <i className="bi bi-person-fill text-[18px] text-content-main"></i>
-            </button>
-
-            {isProfileMenuOpen && (
-              <>
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsProfileMenuOpen(false)}
-                />
-                <div className="absolute top-11 right-0 w-48 bg-background-secondary border border-border-main rounded-lg shadow-xl z-50 overflow-hidden flex flex-col py-1">
-                  {user?.role === 'admin' && (
-                    <button 
-                      onClick={() => navigate('/admin')}
-                      className="w-full text-left px-4 py-2.5 text-[13px] text-content-main hover:bg-background-main transition-colors flex items-center gap-2"
-                    >
-                      <i className="bi bi-speedometer2"></i>
-                      Painel Admin
-                    </button>
-                  )}
-                  <button 
-                    onClick={() => setIsProfileMenuOpen(false)}
-                    className="w-full text-left px-4 py-2.5 text-[13px] text-content-main hover:bg-background-main transition-colors flex items-center gap-2"
-                  >
-                    <i className="bi bi-gear"></i>
-                    Configurações
-                  </button>
-                  <div className="h-[1px] bg-border-main my-1 w-full"></div>
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-2.5 text-[13px] text-status-error hover:bg-status-error/10 transition-colors flex items-center gap-2"
-                  >
-                    <i className="bi bi-box-arrow-right"></i>
-                    Sair
-                  </button>
+          {matricula && (
+            <>
+              <div className="w-[1px] h-6 bg-border-main mx-2"></div>
+              <div className="flex items-center gap-2 mr-2">
+                <div className="w-9 h-9 rounded-full bg-background-main border border-border-main flex items-center justify-center">
+                  <i className="bi bi-person-fill text-[18px] text-content-main"></i>
                 </div>
-              </>
-            )}
-          </div>
+                <span className="text-[12px] text-content-tertiary leading-tight">
+                  Matrícula: <strong className="text-content-main font-semibold">{matricula}</strong>
+                </span>
+              </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -337,43 +284,6 @@ export const AppLayout = () => {
                 className="px-4 h-9 bg-primary hover:bg-primary/90 text-white rounded-lg text-[13px] font-bold transition-colors shadow-sm"
               >
                 Fechar
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
-      {/* Modal de Confirmação de Saída */}
-      {isLogoutModalOpen && (
-        <Modal 
-          isOpen={true} 
-          onClose={() => setIsLogoutModalOpen(false)}
-          className="max-w-[400px]"
-        >
-          <div className="flex flex-col gap-6 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 text-[24px]">
-                <i className="bi bi-box-arrow-right"></i>
-              </div>
-              <h2 className="text-[18px] font-bold text-content-main">
-                Deseja realmente sair?
-              </h2>
-              <p className="text-[13px] text-content-tertiary">
-                Sua sessão atual será encerrada e você precisará fazer login novamente para acessar o sistema.
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setIsLogoutModalOpen(false)}
-                className="flex-1 h-10 border border-border-main rounded-lg text-[13px] font-bold text-content-secondary hover:bg-background-tertiary transition-colors"
-              >
-                NÃO, VOLTAR
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex-1 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg text-[13px] font-bold transition-colors shadow-sm"
-              >
-                SIM, SAIR
               </button>
             </div>
           </div>

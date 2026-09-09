@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { useAuthStore } from './authStore';
 
 interface CepLimits {
   lsc: number;
@@ -45,22 +44,14 @@ interface CepData {
   xobservacao?: ObservacaoPonto[];
 }
 
-interface Recurso {
-  codigo: string;
-  descricao: string;
-}
-
 interface CepState {
   data: CepData | null;
   isLoading: boolean;
   error: string | null;
-  recursos: Recurso[];
-  recursosLoading: boolean;
-  recursosError: string | null;
-  recursoSelecionado: string;
-  loadRecursos: (matricula: number | string) => Promise<void>;
-  setRecurso: (recurso: string) => void;
-  loadCarta: (op: string) => Promise<void>;
+  matricula: string;
+  recurso: string;
+  setParams: (matricula: string, recurso: string) => void;
+  loadCarta: (op: string, matricula: string, recurso: string, numeroCarta?: string) => Promise<void>;
   reset: () => void;
   registerMeasurement: (measurement: {
     v1: number;
@@ -79,79 +70,27 @@ export const useCepStore = create<CepState>((set, get) => ({
   data: null,
   isLoading: false,
   error: null,
-  recursos: [],
-  recursosLoading: false,
-  recursosError: null,
-  recursoSelecionado: '',
+  matricula: '',
+  recurso: '',
 
   reset: () => set({ data: null, error: null }),
 
-  setRecurso: (recurso) => set({ recursoSelecionado: recurso }),
+  setParams: (matricula, recurso) => set({ matricula, recurso }),
 
-  loadRecursos: async (matricula) => {
-    const { token } = useAuthStore.getState();
-    set({ recursosLoading: true, recursosError: null });
-
-    try {
-      console.log('[CEP Store] Carregando recursos para matrícula:', matricula);
-      const response = await fetch('/api/cep/recursos', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ matricula })
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        console.error('[CEP Store] Erro ao carregar recursos:', result);
-        const msg = result?.mensagem || result?.error || 'Erro ao carregar recursos do ERP.';
-        set({ recursos: [], recursosLoading: false, recursosError: msg });
-        return;
-      }
-
-      if (result && (result.sucesso === false || result.sucesso === 'false')) {
-        console.error('[CEP Store] ERP retornou erro de permissão:', result);
-        const msg = result.mensagem || 'Operador não pode operar CEP.';
-        set({ recursos: [], recursosLoading: false, recursosError: msg });
-        return;
-      }
-
-      // Formato real do ERP: { RECURSO: [{ codigo, descricao }, ...], sucesso, mensagem }
-      const lista: Recurso[] = Array.isArray(result?.RECURSO)
-        ? result.RECURSO.map((r: { codigo?: string; descricao?: string }) => ({
-            codigo: (r.codigo || '').trim(),
-            descricao: (r.descricao || '').trim()
-          })).filter((r: Recurso) => r.codigo)
-        : [];
-
-      console.log('[CEP Store] Recursos carregados:', lista);
-      set({ recursos: lista, recursosLoading: false, recursosError: null });
-    } catch (error) {
-      console.error('[CEP Store] Erro ao carregar recursos:', error);
-      set({ recursos: [], recursosLoading: false, recursosError: 'Falha na comunicação ao carregar recursos. Verifique a conexão com o ERP.' });
-    }
-  },
-
-  loadCarta: async (op) => {
-    const { user, token } = useAuthStore.getState();
+  loadCarta: async (op, matricula, recurso, numeroCarta) => {
     const currentData = get().data;
-    const recurso = get().recursoSelecionado;
-    set({ isLoading: true, error: null });
+    set({ isLoading: true, error: null, matricula, recurso });
 
     try {
       const response = await fetch('/api/cep/load', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           op,
-          matricula: user?.matricula,
-          numeroCarta: currentData?.numeroCarta || '',
+          matricula,
+          numeroCarta: numeroCarta || currentData?.numeroCarta || '',
           recurso: recurso || ''
         })
       });
@@ -171,8 +110,7 @@ export const useCepStore = create<CepState>((set, get) => ({
   },
 
   registerMeasurement: async (measurement) => {
-    const { user, token } = useAuthStore.getState();
-    const { data, recursoSelecionado } = get();
+    const { data, matricula, recurso } = get();
     
     if (!data) return;
 
@@ -190,18 +128,18 @@ export const useCepStore = create<CepState>((set, get) => ({
       const payload = {
         op,
         numeroCarta: numeroCarta || '',
-        matricula: user?.matricula || '',            // Matrícula do usuário logado
-        recurso: recursoSelecionado || '',           // Recurso selecionado pelo operador
-        dataHora: measurement.dataHora,              // Data/hora da medição
-        v1: measurement.v1,                          // 5 valores digitados
+        matricula: matricula || '',
+        recurso: recurso || '',
+        dataHora: measurement.dataHora,
+        v1: measurement.v1,
         v2: measurement.v2,
         v3: measurement.v3,
         v4: measurement.v4,
         v5: measurement.v5,
-        media: measurement.media,                    // Média calculada
-        range: measurement.range,                    // Amplitude calculada
-        observacao: measurement.observacao,          // Observação do operador
-        ...restClean                                 // Demais dados originais do ERP (cp, cpk, etc.)
+        media: measurement.media,
+        range: measurement.range,
+        observacao: measurement.observacao,
+        ...restClean
       };
 
       console.log('[CEP Store] Payload enviado para /api/cep/register:', JSON.stringify(payload, null, 2));
@@ -210,7 +148,6 @@ export const useCepStore = create<CepState>((set, get) => ({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(payload)
       });
@@ -227,7 +164,7 @@ export const useCepStore = create<CepState>((set, get) => ({
         set({ data: result });
       } else {
         console.log('[CEP Store] Medição registrada. Fazendo nova requisição (POST) para atualizar os dados da OP:', op);
-        await get().loadCarta(op);
+        await get().loadCarta(op, matricula, recurso);
       }
     } catch (error) {
       console.error('Erro no registro:', error);

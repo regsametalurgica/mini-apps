@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useCepStore } from '../../stores/cepStore';
-import { useAuthStore } from '../../stores/authStore';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
@@ -30,16 +29,19 @@ ChartJS.register(
 );
 
 export const LancamentoCep = () => {
-  const { data, isLoading, error, loadCarta, registerMeasurement, reset, recursos, recursosLoading, recursosError, recursoSelecionado, loadRecursos, setRecurso } = useCepStore();
-  const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
+  const { data, isLoading, error, loadCarta, registerMeasurement, reset, matricula: storeMatricula, recurso: storeRecurso } = useCepStore();
+  const [searchParams] = useSearchParams();
 
   // Sidebar State
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(!data);
+  // Modal State — só exibe se NÃO houver parâmetros na URL
+  const hasUrlParams = !!(searchParams.get('op') && searchParams.get('matricula') && searchParams.get('recurso'));
+  const [isModalOpen, setIsModalOpen] = useState(!hasUrlParams && !data);
   const [opInput, setOpInput] = useState('');
+  const [recursoInput, setRecursoInput] = useState('');
+  const [matriculaInput, setMatriculaInput] = useState('');
+  const [numeroCartaInput, setNumeroCartaInput] = useState('');
 
   // Form State
   const [vValues, setVValues] = useState({ v1: '', v2: '', v3: '', v4: '', v5: '' });
@@ -51,17 +53,26 @@ export const LancamentoCep = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [selectedTime, setSelectedTime] = useState(() => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
 
-  // Reset store on mount to ensure modal always shows up
-  useEffect(() => {
-    reset();
-  }, [reset]);
+  // Flag para evitar chamada duplicada em StrictMode
+  const autoLoadDone = useRef(false);
 
-  // Carrega recursos disponíveis do ERP ao montar o componente
+  // Carregamento automático via parâmetros da URL
   useEffect(() => {
-    if (user?.matricula) {
-      loadRecursos(user.matricula);
+    if (autoLoadDone.current) return;
+
+    const op = searchParams.get('op');
+    const matricula = searchParams.get('matricula');
+    const numeroCarta = searchParams.get('numeroCarta') || '';
+    const recurso = searchParams.get('recurso');
+
+    if (op && matricula && recurso) {
+      autoLoadDone.current = true;
+      console.log('[CEP] Carregamento automático via URL:', { op, matricula, numeroCarta, recurso });
+      loadCarta(op, matricula, recurso, numeroCarta).catch((err) => {
+        console.error('[CEP] Erro no carregamento automático:', err);
+      });
     }
-  }, [user?.matricula, loadRecursos]);
+  }, [searchParams, loadCarta]);
 
   // Cálculos automáticos
   const stats = useMemo(() => {
@@ -86,24 +97,27 @@ export const LancamentoCep = () => {
       return;
     }
 
-    if (!recursoSelecionado) {
-      alert("Por favor, selecione um recurso.");
+    if (!recursoInput) {
+      alert("Por favor, digite o código do recurso.");
+      return;
+    }
+
+    if (!matriculaInput) {
+      alert("Por favor, digite a matrícula do operador.");
       return;
     }
 
     try {
-      await loadCarta(opInput);
+      await loadCarta(opInput, matriculaInput, recursoInput, numeroCartaInput);
       setIsModalOpen(false);
     } catch (err) {
       console.error('[LancamentoCep] Erro ao carregar OP:', err);
-      // Erro já é tratado na store e exibido se necessário
     }
   };
 
   const handleCancel = () => {
     reset();
-    logout();
-    navigate('/login');
+    setIsModalOpen(true);
   };
 
   // Lógica de navegação com Enter
@@ -167,102 +181,105 @@ export const LancamentoCep = () => {
     }
   };
 
+  // Tela de carregamento quando veio da URL e ainda está carregando
+  if (hasUrlParams && isLoading && !data) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background-main">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-14 h-14 border-4 border-border-main border-t-primary rounded-full animate-spin"></div>
+          <div className="text-center">
+            <p className="text-content-main font-bold text-[16px]">Carregando carta CEP...</p>
+            <p className="text-content-tertiary text-[13px] mt-1">OP: {searchParams.get('op')} | Recurso: {searchParams.get('recurso')}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Tela de erro quando veio da URL e falhou
+  if (hasUrlParams && error && !data) {
+    return (
+      <div className="flex h-full items-center justify-center bg-background-main">
+        <div className="flex flex-col items-center gap-6 max-w-[400px] text-center">
+          <div className="w-14 h-14 rounded-full bg-status-error/10 flex items-center justify-center text-status-error text-[28px]">
+            <i className="bi bi-exclamation-octagon"></i>
+          </div>
+          <div>
+            <h2 className="text-[18px] font-bold text-content-main mb-2">Erro ao carregar carta</h2>
+            <p className="text-[13px] text-content-secondary bg-status-error/10 border border-status-error/20 p-4 rounded-lg">
+              {error}
+            </p>
+          </div>
+          <p className="text-[12px] text-content-tertiary">
+            OP: {searchParams.get('op')} | Matrícula: {searchParams.get('matricula')} | Recurso: {searchParams.get('recurso')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isModalOpen || !data) {
     return (
       <Modal isOpen={true} onClose={handleCancel}>
         <div className="flex flex-col gap-6">
-          {recursosError ? (
-            <>
-              <div className="flex flex-col gap-2">
-                <h2 className="text-[20px] font-bold text-status-error flex items-center gap-3">
-                  <i className="bi bi-exclamation-octagon text-status-error"></i>
-                  Erro ao carregar
-                </h2>
-                <p className="text-[14px] text-content-secondary mt-2 bg-status-error/10 border border-status-error/20 p-4 rounded-lg font-medium">
-                  {recursosError}
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
-                  CANCELAR E SAIR
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
-                  <i className="bi bi-search text-primary"></i>
-                  Iniciar Controle CEP
-                </h2>
-                <p className="text-[14px] text-content-tertiary">
-                  Informe o número da Ordem de Produção para carregar a carta correspondente.
-                </p>
-              </div>
+          <div className="flex flex-col gap-2">
+            <h2 className="text-[20px] font-bold text-content-main flex items-center gap-3">
+              <i className="bi bi-search text-primary"></i>
+              Iniciar Controle CEP
+            </h2>
+            <p className="text-[14px] text-content-tertiary">
+              Informe os dados para carregar a carta correspondente.
+            </p>
+          </div>
 
-              <div className="space-y-4">
-                <Input
-                  label="Número da Ordem de Produção (OP)"
-                  placeholder="Ex: 1958"
-                  value={opInput}
-                  onChange={(e) => setOpInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleStart()}
-                  autoFocus
-                  icon="bi-hash"
-                />
+          <div className="space-y-4">
+            <Input
+              label="Matrícula do Operador"
+              placeholder="Ex: 51"
+              value={matriculaInput}
+              onChange={(e) => setMatriculaInput(e.target.value)}
+              autoFocus
+              icon="bi-person-badge"
+            />
 
-                {/* Seleção de Recurso */}
-                <div className="flex flex-col gap-1">
-                  <label className="text-[13px] font-bold text-content-main">Recurso</label>
-                  <div className="relative">
-                    <i className="bi bi-gear absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-primary pointer-events-none"></i>
-                    {recursosLoading ? (
-                      <div className="w-full h-[42px] bg-background-main border border-border-main rounded-lg flex items-center pl-10 pr-4 text-[13px] text-content-tertiary">
-                        <div className="w-4 h-4 border-2 border-border-main border-t-primary rounded-full animate-spin mr-2"></div>
-                        Carregando recursos...
-                      </div>
-                    ) : recursos.length > 0 ? (
-                      <select
-                        value={recursoSelecionado}
-                        onChange={(e) => setRecurso(e.target.value)}
-                        className="w-full h-[42px] bg-background-main border border-border-main rounded-lg pl-10 pr-8 text-[13px] text-content-main focus:outline-none focus:border-primary transition-colors appearance-none cursor-pointer"
-                      >
-                        <option value="">Selecione um recurso...</option>
-                        {recursos.map((recurso) => (
-                          <option key={recurso.codigo} value={recurso.codigo}>
-                            {recurso.codigo} - {recurso.descricao}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-full h-[42px] bg-background-main border border-status-error/30 rounded-lg flex items-center pl-10 pr-4 text-[12px] text-status-error">
-                        Nenhum recurso disponível
-                      </div>
-                    )}
-                    {!recursosLoading && recursos.length > 0 && (
-                      <i className="bi bi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-content-tertiary pointer-events-none"></i>
-                    )}
-                  </div>
-                </div>
+            <Input
+              label="Código do Recurso"
+              placeholder="Ex: 513"
+              value={recursoInput}
+              onChange={(e) => setRecursoInput(e.target.value)}
+              icon="bi-gear"
+            />
 
-                {error && (
-                  <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
-                    <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
-                    <span className="text-[12px] text-status-error font-medium">{error}</span>
-                  </div>
-                )}
+            <Input
+              label="Número da Ordem de Produção (OP)"
+              placeholder="Ex: 079201"
+              value={opInput}
+              onChange={(e) => setOpInput(e.target.value)}
+              icon="bi-hash"
+            />
+
+            <Input
+              label="Número da Carta (opcional)"
+              placeholder="Ex: 000033"
+              value={numeroCartaInput}
+              onChange={(e) => setNumeroCartaInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleStart()}
+              icon="bi-file-earmark-text"
+            />
+
+            {error && (
+              <div className="p-3 rounded-lg bg-status-error/10 border border-status-error/20 flex items-center gap-3">
+                <i className="bi bi-exclamation-triangle-fill text-status-error"></i>
+                <span className="text-[12px] text-status-error font-medium">{error}</span>
               </div>
+            )}
+          </div>
 
-              <div className="flex gap-3 pt-2">
-                <Button variant="secondary" onClick={handleCancel} className="flex-1 whitespace-nowrap !px-2">
-                  CANCELAR E SAIR
-                </Button>
-                <Button onClick={handleStart} isLoading={isLoading} className="flex-1 whitespace-nowrap !px-2">
-                  INICIAR PROCESSO
-                </Button>
-              </div>
-            </>
-          )}
+          <div className="flex gap-3 pt-2">
+            <Button onClick={handleStart} isLoading={isLoading} className="flex-1 whitespace-nowrap !px-2">
+              INICIAR PROCESSO
+            </Button>
+          </div>
         </div>
       </Modal>
     );
@@ -410,8 +427,8 @@ export const LancamentoCep = () => {
         </div>
 
         <Input
-          label="Operador"
-          value={user?.nome || 'Não Logado'}
+          label="Operador (Matrícula)"
+          value={storeMatricula || '---'}
           readOnly
           className="opacity-70"
           icon="bi-person"
